@@ -1,15 +1,14 @@
-const CACHE = 'cm6-v1';
+const CACHE = 'cm6-v1.001';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/importmap.js',
-  '/src/main.js',
-  '/src/sample-script.js',
-  '/icons/apple-touch-icon.png',
-  '/icons/favicon-32.png',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  'index.html',
+  'manifest.webmanifest',
+  'importmap.js',
+  'src/main.js',
+  'src/sample-script.js',
+  'icons/apple-touch-icon.png',
+  'icons/favicon-32.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
 ];
 
 // During install, cache the app shell

@@ -8,8 +8,8 @@ A minimal, no-build, offline-first Progressive Web App for experimenting with Co
 ### 1. Clone the repository
 
 ```sh
-git clone <repo-url>
-cd <repo-name>
+git clone git@github.com:1AH-TUT/scrypt-pwa-cm6.git
+cd scrypt-pwa-cm6
 ````
 
 ### 2. Run a Static HTTP Server
