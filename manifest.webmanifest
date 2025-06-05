@@ -1,6 +1,6 @@
 {
-  "name": "CodeMirror 6 PWA demo",
-  "short_name": "CM6 demo",
+  "name": "Scrypt CM6 demo",
+  "short_name": "Scrypt CM6",
   "display": "standalone",
   "start_url": ".",
   "background_color": "#121212",
