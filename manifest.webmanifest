@@ -1,0 +1,12 @@
+{
+  "name": "CodeMirror 6 PWA demo",
+  "short_name": "CM6 demo",
+  "display": "standalone",
+  "start_url": ".",
+  "background_color": "#121212",
+  "theme_color": "#222222",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

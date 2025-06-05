@@ -1,0 +1,15 @@
+/node_modules/
+package-lock.json
+
+# ---- OS junk ----
+.DS_Store
+Thumbs.db
+
+# ---- VIDE junk ----
+.vscode/
+.idea/
+*.iml
+
+# ---- Git ----
+.git/
+.gitmodules

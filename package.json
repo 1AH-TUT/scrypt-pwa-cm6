@@ -1,0 +1,15 @@
+{
+  "name": "scrypt-cm6",
+  "version": "1.0.0",
+  "description": "A PWA port of Scrypt using CodeMirror 6",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Allan Horne",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "jspm": "^4.0.2"
+  }
+}
