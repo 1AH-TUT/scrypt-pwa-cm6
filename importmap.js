@@ -11,7 +11,7 @@
 })
 ({
   "imports": {
-    "cm6-test": "./src/main.js"
+    "scrypt-cm6": "./src/main.js"
   },
   "scopes": {
     "./": {
