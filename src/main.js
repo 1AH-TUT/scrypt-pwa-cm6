@@ -56,13 +56,14 @@ const myTheme = EditorView.baseTheme({
                 position: "relative",
                 textAlign:   "center",
                 marginBottom: ".6em",
-                textTransform: "uppercase"
+                textTransform: "uppercase",
+    fontWeight: "bolder"
               },
   ".cm-dialogue": {
                 width: "4in", marginLeft: "auto", marginRight: "auto", textAlign: "center"
               },
-  ".cm-transition": {textAlign: "right", textTransform: "uppercase"},
-  ".cm-heading": {textAlign: "left", textTransform: "uppercase"},
+  ".cm-transition": {textAlign: "right", textTransform: "uppercase", fontWeight: "bolder"},
+  ".cm-heading": {textAlign: "left", textTransform: "uppercase", fontWeight: "bolder"},
   ":host": {background:"#111", color:"#eee"}
 });
 
