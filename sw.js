@@ -1,5 +1,6 @@
-const CACHE = 'cm6-v1.002';
+const CACHE = 'cm6-v1.003';
 const ASSETS = [
+  '/',
   'index.html',
   'manifest.webmanifest',
   'importmap.js',
@@ -20,10 +21,14 @@ const ASSETS = [
   'assets/fonts/CourierPrime-Italic.ttf',
   'assets/fonts/CourierPrime-Bold.ttf',
   'assets/fonts/CourierPrime-BoldItalic.ttf',
-  'assets/fonts/CourierPrimeSans.ttf',
-  'assets/fonts/CourierPrimeSans-Italic.ttf',
-  'assets/fonts/CourierPrimeSans-Bold.ttf',
-  'assets/fonts/CourierPrimeSans-BoldItalic.ttf'
+  'assets/fonts/CourierPrime.woff2',
+  'assets/fonts/CourierPrime-Italic.woff2',
+  'assets/fonts/CourierPrime-Bold.woff2',
+  'assets/fonts/CourierPrime-BoldItalic.woff2',
+  'assets/fonts/CourierPrimeSans.woff2',
+  'assets/fonts/CourierPrimeSans-Italic.woff2',
+  'assets/fonts/CourierPrimeSans-Bold.woff2',
+  'assets/fonts/CourierPrimeSans-BoldItalic.woff2',
 ];
 
 // During install, cache the app shell

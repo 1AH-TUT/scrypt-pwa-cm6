@@ -1,25 +1,25 @@
 /*──────────────────────────────────────────────────────*/
-/* Courier Prime (Serif) – TTF for now - TODO: WOFF2   */
+/* Courier Prime (Serif)                               */
 /*────────────────────────────────────────────────────*/
 @font-face {
   font-family: "Courier Prime";
-  src: url("../assets/fonts/CourierPrime.ttf") format("truetype");
-  font-weight: 400; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/CourierPrime.woff2") format("woff2");
+  font-weight: 400; font-style: normal;   font-display: swap;
 }
 @font-face {
   font-family: "Courier Prime";
-  src: url("../assets/fonts/CourierPrime-Italic.ttf") format("truetype");
-  font-weight: 400; font-style: italic; font-display: swap;
+  src: url("../assets/fonts/CourierPrime-Italic.woff2") format("woff2");
+  font-weight: 400; font-style: italic;  font-display: swap;
 }
 @font-face {
   font-family: "Courier Prime";
-  src: url("../assets/fonts/CourierPrime-Bold.ttf") format("truetype");
-  font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/CourierPrime-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal;   font-display: swap;
 }
 @font-face {
   font-family: "Courier Prime";
-  src: url("../assets/fonts/CourierPrime-BoldItalic.ttf") format("truetype");
-  font-weight: 700; font-style: italic; font-display: swap;
+  src: url("../assets/fonts/CourierPrime-BoldItalic.woff2") format("woff2");
+  font-weight: 700; font-style: italic;  font-display: swap;
 }
 
 /*─────────────────────────────────────────────────────────*/
@@ -27,22 +27,22 @@
 /*───────────────────────────────────────────────────────*/
 @font-face {
   font-family: "Courier Prime Sans";
-  src: url("../assets/fonts/CourierPrimeSans.ttf") format("truetype");
+  src: url("../assets/fonts/CourierPrimeSans.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Courier Prime Sans";
-  src: url("../assets/fonts/CourierPrimeSans-Italic.ttf") format("truetype");
+  src: url("../assets/fonts/CourierPrimeSans-Italic.woff2") format("woff2");
   font-weight: 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: "Courier Prime Sans";
-  src: url("../assets/fonts/CourierPrimeSans-Bold.ttf") format("truetype");
+  src: url("../assets/fonts/CourierPrimeSans-Bold.woff2") format("woff2");
   font-weight: 700; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Courier Prime Sans";
-  src: url("../assets/fonts/CourierPrimeSans-BoldItalic.ttf") format("truetype");
+  src: url("../assets/fonts/CourierPrimeSans-BoldItalic.woff2") format("woff2");
   font-weight: 700; font-style: italic; font-display: swap;
 }
 
@@ -57,9 +57,9 @@
   --fg-editor:      #abb2bf;
 
   /* Base UI typography (used across menus, dialogs, buttons) */
-  --font-family:    "Inter", system-ui, sans-serif;
-  --font-size-base: 16px;
-  --line-height:    1.4;
+  /*--font-family:    "Inter", system-ui, sans-serif;*/
+  /*--font-size-base: 16px;*/
+  /*--line-height:    1.4;*/
 
   /* Screenplay editor typography */
   --font-screenplay: "Courier Prime", Courier, monospace;
@@ -118,6 +118,7 @@ html,body { height:100%; margin:0; }
   grid-template-rows: 3rem 1fr;   /* 3rem top-bar, rest fills */
   background-color: var(--bg-page);
   color:            var(--fg-page);
+  font-family:      var(--font-ui);
 }
 
 /* Top bar */
