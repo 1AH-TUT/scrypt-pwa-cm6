@@ -28,8 +28,7 @@ const myTheme = EditorView.baseTheme({
                 textAlign: "center", marginBottom: ".6em",
                 textTransform: "uppercase", fontWeight: "bolder" },
   ".cm-dialogue": { width: "4in", margin: "0 auto", textAlign: "center" },
-  ".cm-transition": { textAlign: "right", textTransform: "uppercase",
-                      fontWeight: "bolder" },
+  ".cm-transition": { textAlign: "right", textTransform: "uppercase" },
   ".cm-heading": { textAlign: "left", textTransform: "uppercase",
                    fontWeight: "bolder" }
 });
