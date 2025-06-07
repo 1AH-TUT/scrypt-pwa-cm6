@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scrypt CM6 demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#222" />
-  <link rel="icon" href="icons/icon-192.png" type="image/png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <!-- preload Courier Prime (TTF for now, switch to WOFF2 later) -->
+  <link rel="preload" href="assets/fonts/CourierPrime.ttf"            as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/CourierPrime-Bold.ttf"       as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/CourierPrime-Italic.ttf"     as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/fonts/CourierPrime-BoldItalic.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="icon" href="assets/icons/icon-192.png" type="image/png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png" />
   <link rel="stylesheet" href="styles/theme.css" />
   <script src="importmap.js"></script>
   <script async crossorigin="anonymous" src="https://ga.jspm.io/npm:es-module-shims@2.6.0/dist/es-module-shims.js"></script>

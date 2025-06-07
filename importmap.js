@@ -21,6 +21,7 @@
       "@codemirror/state": "https://ga.jspm.io/npm:@codemirror/state@6.5.2/dist/index.js",
       "@codemirror/theme-one-dark": "https://ga.jspm.io/npm:@codemirror/theme-one-dark@6.1.2/dist/index.js",
       "@codemirror/view": "https://ga.jspm.io/npm:@codemirror/view@6.37.1/dist/index.js",
+      "idb": "https://ga.jspm.io/npm:idb@8.0.3/build/index.js",
       "lit": "https://ga.jspm.io/npm:lit@3.3.0/index.js"
     },
     "https://ga.jspm.io/npm:@codemirror/commands@6.8.1/": {

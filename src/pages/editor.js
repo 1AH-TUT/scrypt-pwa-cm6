@@ -1,6 +1,6 @@
 import { buildEditor } from "../editor-setup.js";
 
-export default function makeEditorPage() {
+export default function makeEditorPage(scriptObj) {
   const wrapper = document.createElement("div");
   wrapper.className = "editor-page";
 
@@ -11,6 +11,6 @@ export default function makeEditorPage() {
   wrapper.appendChild(centre);
   wrapper.appendChild(document.createElement("div"));
 
-  buildEditor({ parent: centre });   // put CodeMirror into centre div
+  buildEditor({ parent: centre, screenplay: scriptObj });
   return wrapper;
 }

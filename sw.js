@@ -6,15 +6,24 @@ const ASSETS = [
   'styles/theme.css',
   'src/router.js',
   'src/main.js',
+  'src/db.js',
   'src/sample-script.js',
   'src/editor-setup.js',
   'src/pages/editor.js',
   'src/pages/library.js',
   'src/pages/splash.js',
-  'icons/apple-touch-icon.png',
-  'icons/favicon-32.png',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
+  'assets/icons/apple-touch-icon.png',
+  'assets/icons/favicon-32.png',
+  'assets/icons/icon-192.png',
+  'assets/icons/icon-512.png',
+  'assets/fonts/CourierPrime.ttf',
+  'assets/fonts/CourierPrime-Italic.ttf',
+  'assets/fonts/CourierPrime-Bold.ttf',
+  'assets/fonts/CourierPrime-BoldItalic.ttf',
+  'assets/fonts/CourierPrimeSans.ttf',
+  'assets/fonts/CourierPrimeSans-Italic.ttf',
+  'assets/fonts/CourierPrimeSans-Bold.ttf',
+  'assets/fonts/CourierPrimeSans-BoldItalic.ttf'
 ];
 
 // During install, cache the app shell

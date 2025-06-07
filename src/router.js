@@ -1,14 +1,15 @@
 import * as pages from "./pages/index.js";
 
 const slot = document.getElementById("page-slot");
-export function mountPage(name) {
+export function mountPage(name, scriptObj) {
   console.log("Mounting Page:", name);
   slot.innerHTML = "";
 
-  // pick the factory, default to splash
-  const makePage = pages[name] || pages.splash;
+  let make = pages['splash'];
+  if (name === "editor") make = () => pages[name](scriptObj);
+  else if (name === "library") make = pages[name];
 
   // call it and append its return value to 'page-slot'
-  const pageEl = makePage();
+  const pageEl = make();
   slot.appendChild(pageEl);
 }

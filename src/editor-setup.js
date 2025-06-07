@@ -21,7 +21,7 @@ import { screenplay as demoScript, toPlainText } from "./sample-script.js";
 /*─────────────────────────────────────────────────────────────────────────*/
 
 const myTheme = EditorView.baseTheme({
-  ".cm-content": { fontFamily: "Courier Prime, monospace", fontSize: "12pt" },
+  ".cm-content": { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt" },
   ".cm-scroller": { lineHeight: "1.2" },
   ".cm-char": { display: "inline-block", maxWidth: "100%", left: "50%",
                 transform: "translateX(-50%)", position: "relative",

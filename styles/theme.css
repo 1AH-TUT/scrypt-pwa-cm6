@@ -1,3 +1,54 @@
+/*──────────────────────────────────────────────────────*/
+/* Courier Prime (Serif) – TTF for now - TODO: WOFF2   */
+/*────────────────────────────────────────────────────*/
+@font-face {
+  font-family: "Courier Prime";
+  src: url("../assets/fonts/CourierPrime.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime";
+  src: url("../assets/fonts/CourierPrime-Italic.ttf") format("truetype");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime";
+  src: url("../assets/fonts/CourierPrime-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime";
+  src: url("../assets/fonts/CourierPrime-BoldItalic.ttf") format("truetype");
+  font-weight: 700; font-style: italic; font-display: swap;
+}
+
+/*─────────────────────────────────────────────────────────*/
+/* Courier Prime Sans (Serif) – TTF for now - TODO: WOFF2 */
+/*───────────────────────────────────────────────────────*/
+@font-face {
+  font-family: "Courier Prime Sans";
+  src: url("../assets/fonts/CourierPrimeSans.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime Sans";
+  src: url("../assets/fonts/CourierPrimeSans-Italic.ttf") format("truetype");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime Sans";
+  src: url("../assets/fonts/CourierPrimeSans-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime Sans";
+  src: url("../assets/fonts/CourierPrimeSans-BoldItalic.ttf") format("truetype");
+  font-weight: 700; font-style: italic; font-display: swap;
+}
+
+/*─────────────────────────────────────────────────────────*/
+/* variables                                              */
+/*───────────────────────────────────────────────────────*/
 :root {
   /* page-level fonts & colors */
   --bg-page:        #121212;
@@ -5,9 +56,14 @@
   --bg-editor:      #282c34;
   --fg-editor:      #abb2bf;
 
+  /* Base UI typography (used across menus, dialogs, buttons) */
   --font-family:    "Inter", system-ui, sans-serif;
   --font-size-base: 16px;
   --line-height:    1.4;
+
+  /* Screenplay editor typography */
+  --font-screenplay: "Courier Prime", Courier, monospace;
+  --font-ui:         "Courier Prime Sans", "Courier Prime", monospace;
 
   /* header */
   --bg-header:      #1e1e1e;
@@ -25,6 +81,7 @@
   --editor-height:     100%;
   --editor-min-height: 0;
 }
+
 
 /* Dark‐mode overrides */
 body.dark {

@@ -127,5 +127,6 @@ src/
 ## Credits
 
 * Built with [CodeMirror 6](https://codemirror.net/6/), [Lit](https://lit.dev/) and [JSPM](jspm.org).
+* Uses the [Courier Prime](https://quoteunquoteapps.com/courierprime/) font by Quote-Unquote Apps.
 
 ---
