@@ -1,10 +1,16 @@
-const CACHE = 'cm6-v1.001';
+const CACHE = 'cm6-v1.002';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',
   'importmap.js',
+  'styles/theme.css',
+  'src/router.js',
   'src/main.js',
   'src/sample-script.js',
+  'src/editor-setup.js',
+  'src/pages/editor.js',
+  'src/pages/library.js',
+  'src/pages/splash.js',
   'icons/apple-touch-icon.png',
   'icons/favicon-32.png',
   'icons/icon-192.png',

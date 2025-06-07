@@ -5,29 +5,20 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scrypt CM6 demo</title>
-
   <meta name="theme-color" content="#222" />
   <link rel="icon" href="icons/icon-192.png" type="image/png" />
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
-
-  <style>
-    html,body{height:100%;margin:0;background:#121212;color:#eee;font:16px/1.4 Inter,system-ui,sans-serif;}
-    #app{height:100%;display:flex;flex-direction:column;}
-    header{padding:.5rem 1rem;background:#1e1e1e;border-bottom:1px solid #333;}
-    main{flex:1;min-height:0;}
-    .cm-editor{height:100%;}
-  </style>
+  <link rel="stylesheet" href="styles/theme.css" />
   <script src="importmap.js"></script>
   <script async crossorigin="anonymous" src="https://ga.jspm.io/npm:es-module-shims@2.6.0/dist/es-module-shims.js"></script>
-  <script type="module" src="src/main.js"></script>
-  <script type="module" src="src/components/app-sidebar.js"></script>
 </head>
 <body>
-  <div id="shell" style="display: flex; height: 100%;">
-    <app-sidebar id="nav"></app-sidebar>
-    <div style="flex:1;display:flex;flex-direction:column;width:0">
-      <header>Scrypt CM6 demo</header>
-      <main id="editor" style="flex:1;min-height:0"></main>
+  <div id="app-shell">
+    <header id="top-bar">Scrypt CM6 demo</header>
+
+    <div id="content-grid">
+      <app-sidebar id="sidebar-left"></app-sidebar>   <!-- left column -->
+      <main id="page-slot"></main>                    <!-- scrollable area -->
     </div>
   </div>
 
@@ -36,5 +27,9 @@
       navigator.serviceWorker.register('sw.js');
     }
   </script>
+
+  <!-- boot code -->
+  <script type="module" src="src/main.js"></script>
 </body>
+
 </html>

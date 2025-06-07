@@ -1,0 +1,122 @@
+:root {
+  /* page-level fonts & colors */
+  --bg-page:        #121212;
+  --fg-page:        #eee;
+  --bg-editor:      #282c34;
+  --fg-editor:      #abb2bf;
+
+  --font-family:    "Inter", system-ui, sans-serif;
+  --font-size-base: 16px;
+  --line-height:    1.4;
+
+  /* header */
+  --bg-header:      #1e1e1e;
+  --header-border:  1px solid #333;
+  --header-padding: 0.5rem 1rem;
+
+  /* sidebar */
+  --sidebar-bg:           #1e1e1e;
+  --sidebar-fg:           #ccc;
+  --sidebar-width:        220px;
+  --sidebar-width-closed: 56px;
+  --transition-ease:      0.2s ease;
+
+  /* main content */
+  --editor-height:     100%;
+  --editor-min-height: 0;
+}
+
+/* Dark‐mode overrides */
+body.dark {
+  --bg-page:         #111;
+  --fg-page:         #ddd;
+  --bg-header:       #222;
+  --header-border:   1px solid #444;
+  --sidebar-bg:      #222;
+  --sidebar-fg:      #ddd;
+}
+
+/* Light‐mode overrides */
+/* 
+body.light {
+  --bg-page:         #fafafa;
+  --fg-page:         #222;
+  --bg-header:       #eee;
+  --header-border:   1px solid #ccc;
+  --sidebar-bg:      #f5f5f5;
+  --sidebar-fg:      #333;
+}
+*/
+
+/*─────────────────────────────────────────────────────────────────────────*/
+/* 2. Base defaults for html, body                                        */
+/*───────────────────────────────────────────────────────────────────────*/
+/* Root fill */
+html,body { height:100%; margin:0; }
+
+/* App-shell grid: top-bar + rest */
+#app-shell {
+  height:100%;
+  display:grid;
+  grid-template-rows: 3rem 1fr;   /* 3rem top-bar, rest fills */
+  background-color: var(--bg-page);
+  color:            var(--fg-page);
+}
+
+/* Top bar */
+#top-bar {
+  display:flex; align-items:center; padding:0 1rem;
+  background:var(--bg-header); color:var(--fg-page);
+}
+
+/* Two-column grid for sidebar + main */
+#content-grid {
+  display:grid;
+  grid-template-columns: auto 1fr;
+  height:100%;
+}
+
+/* Sidebar always full height, sticky so it never scrolls */
+app-sidebar#sidebar-left {
+  position:sticky; top:0;
+  height:100vh;
+}
+
+/* Main page slot scrolls if content taller than viewport */
+#page-slot {
+  height: 100%;
+  overflow:auto;
+}
+
+/* Editor page inner layout (3 columns) */
+.editor-page {
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;   /* gutters – centre auto width */
+  padding:0 1rem;       /* side padding so gutters never hit edge */
+}
+
+.editor-centre {
+  max-width:7.5in;      /* screenplay width cap */
+  width:100%;
+}
+
+/*────────────────────────────────────────────────────────────────────────*/
+/* 3. Pages                                                              */
+/*──────────────────────────────────────────────────────────────────────*/
+
+#content-grid:has(#page-slot > .editor-page) {
+  background: var(--bg-editor);
+  color:      var(--fg-editor);
+}
+
+/*────────────────────────────────────────────────────────────────────────*/
+/* 4. Utility classes                                                    */
+/*──────────────────────────────────────────────────────────────────────*/
+
+.hidden {
+  display: none !important;
+}
+
+/**:focus {*/
+/*  outline: 2px solid cyan;*/
+/*}*/

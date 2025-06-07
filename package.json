@@ -12,7 +12,9 @@
   "devDependencies": {
     "jspm": "^4.0.2"
   },
-    "exports": {
-    ".": "./src/main.js"
+  "exports": {
+    ".": "./src/main.js",
+    "./app-sidebar": "./src/components/app-sidebar.js",
+    "./editor-setup": "./src/editor-setup.js"
   }
 }
