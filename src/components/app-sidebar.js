@@ -1,4 +1,4 @@
-import {LitElement, html, css} from "lit";
+import { LitElement, html, css } from "lit";
 
 export class AppSidebar extends LitElement {
   static properties = {
@@ -30,6 +30,7 @@ export class AppSidebar extends LitElement {
       gap: 0.5rem;
       text-decoration: none;
       color: inherit;
+      cursor: pointer;
     }
     button.hamburger {
       all: unset;
@@ -53,9 +54,9 @@ export class AppSidebar extends LitElement {
     );
   }
 
-  #go(page){ this.dispatchEvent(new CustomEvent("nav",{detail:page, bubbles:true, composed:true})) }
+  #go(page) { this.dispatchEvent(new CustomEvent("nav", { detail: page, bubbles: true, composed: true })) }
 
-  render(){
+  render() {
     return html`
       <header>
         <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}>☰</button>
