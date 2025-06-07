@@ -30,7 +30,7 @@ export class AppSidebar extends LitElement {
       gap: 0.5rem;
       text-decoration: none;
       color: inherit;
-      cursoer: pointer;
+      cursor: pointer;
     }
     button.hamburger {
       all: unset;
