@@ -20,7 +20,7 @@ Recommended: use JSPM serve for a better DX (hot reload, HTTPS, correct MIME, CO
 1. [Install JSPM CLI if needed](https://jspm.org/docs/getting-started):
 
    ```sh
-   npm npm install --save-dev jspm
+   npm install --save-dev jspm
    ```
 2. Serve local 
     ```sh
