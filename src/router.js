@@ -1,19 +1,14 @@
-const slot = document.getElementById("page-slot");
+import * as pages from "./pages/index.js";
 
+const slot = document.getElementById("page-slot");
 export function mountPage(name) {
   console.log("Mounting Page:", name);
-  slot.innerHTML = "";            // clear
-  switch (name) {
-    case "editor":
-      import("./pages/editor.js").then(({default: elm}) =>
-        slot.appendChild(elm()));
-      break;
-    case "library":
-      import("./pages/library.js").then(({default: elm}) =>
-        slot.appendChild(elm()));
-      break;
-    default:
-      import("./pages/splash.js").then(({default: elm}) =>
-        slot.appendChild(elm()));
-  }
+  slot.innerHTML = "";
+
+  // pick the factory, default to splash
+  const makePage = pages[name] || pages.splash;
+
+  // call it and append its return value to 'page-slot'
+  const pageEl = makePage();
+  slot.appendChild(pageEl);
 }
