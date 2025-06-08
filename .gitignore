@@ -5,7 +5,7 @@ package-lock.json
 .DS_Store
 Thumbs.db
 
-# ---- VIDE junk ----
+# ---- IDE junk ----
 .vscode/
 .idea/
 *.iml
