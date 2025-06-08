@@ -32,19 +32,24 @@ export function toPlainText(json) {
   json.elements.forEach(el => {
     switch (el.type) {
       case "dialogue":
-        // 1. character
-        lines.push(el.character.toUpperCase());
-        lineMap.push({id: el.id, type: el.type, field: "character"});
-    
-        // // 2. parenthetical (optional)
-        // if (el.parenthetical) {
-        //   lines.push(`(${el.parenthetical})`);
-        //   lineMap.push({id: el.id, type: el.type, field: "parenthetical"});
-        // }
+        try {
+          // 1. character
+          lines.push(el.character.toUpperCase());
+          lineMap.push({id: el.id, type: el.type, field: "character"});
 
-        // 3. actual text (can wrap)
-        lines.push(el.text);
-        lineMap.push({id: el.id, type: el.type, field: "text"});
+          // // 2. parenthetical (optional)
+          // if (el.parenthetical) {
+          //   lines.push(`(${el.parenthetical})`);
+          //   lineMap.push({id: el.id, type: el.type, field: "parenthetical"});
+          // }
+
+          // 3. actual text (can wrap)
+          lines.push(el.text.replaceAll('\n', '<br />'));
+          lineMap.push({id: el.id, type: el.type, field: "text"});
+        } catch (error) {
+          console.error('Something went wrong with a dialogue:', error, el);
+        }
+
         break;
 
       case "transition":
