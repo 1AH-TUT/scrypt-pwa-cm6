@@ -1,4 +1,4 @@
-const CACHE = 'cm6-v1.003';
+const CACHE = 'cm6-v1.004';
 const ASSETS = [
   '/',
   'index.html',
@@ -9,7 +9,8 @@ const ASSETS = [
   'src/main.js',
   'src/db.js',
   'src/sample-script.js',
-  'src/editor-setup.js',
+  'src/editor-view.js',
+  "src/doc-controller.js",
   'src/pages/editor.js',
   'src/pages/library.js',
   'src/pages/splash.js',

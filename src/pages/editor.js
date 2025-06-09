@@ -1,4 +1,5 @@
-import { buildEditor } from "../editor-setup.js";
+import { createEditorView } from "../editor-view.js";
+import { DocController } from "../doc-controller.js";
 
 export default function makeEditorPage(scriptObj) {
   const wrapper = document.createElement("div");
@@ -11,6 +12,8 @@ export default function makeEditorPage(scriptObj) {
   wrapper.appendChild(centre);
   wrapper.appendChild(document.createElement("div"));
 
-  buildEditor({ parent: centre, screenplay: scriptObj });
+  // buildEditor({ parent: centre, screenplay: scriptObj });
+  const controller = new DocController(scriptObj);
+  createEditorView({ parent: centre, controller });
   return wrapper;
 }

@@ -21,10 +21,10 @@ export function explodeElement(el) {
         meta .push({id, type: el.type, field:"text", idx:i});
       });
   }
-  return {lines, meta};
+  return { lines, meta };
 }
 
-export function toPlainText(json) {
+export function toLinesAndMap(json) {
   const lines   = [];
   const lineMap = [];          // [{id, field}]  -> keep for reverse lookup
 
@@ -54,5 +54,6 @@ export function toPlainText(json) {
     });
   });
 
-  return {text: lines.join("\n"), lineMap};
+  // return { text: lines.join("\n"), lineMap };
+  return { lines, lineMap };
 }
