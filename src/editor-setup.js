@@ -23,17 +23,19 @@ import { toPlainText } from "./scrypt/element-utils.js"
 /*─────────────────────────────────────────────────────────────────────────*/
 
 const myTheme = EditorView.baseTheme({
-  ".cm-content":    { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt" },
+  ".cm-content":    { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt", marginLeft: "1.4in", "marginRight": "1in" },
   ".cm-scroller":   { lineHeight: "1.2" },
-  ".cm-fp-title":   { fontWeight: "bold", textTransform: "uppercase", textAlign: "center", marginTop: "1in" },
+  ".cm-line":       { padding: "0" },
+  ".cm-fp-title":   { fontWeight: "bold", textTransform: "uppercase", textAlign: "center", marginTop: "1in", fontSize: "16pt" },
   ".cm-right":      { textAlign: "right" },
   ".cm-left":       { textAlign: "left" },
   ".cm-center":     { textAlign: "center" },
+  ".cm-paren":      { textAlign: "center", marginBottom: "0.75em" },
   ".cm-char":       { display: "inline-block", maxWidth: "100%", left: "50%",
                       transform: "translateX(-50%)", position: "relative",
                       textAlign: "center", marginBottom: ".6em",
                       textTransform: "uppercase", fontWeight: "bolder" },
-  ".cm-dialogue":   { width: "4in", margin: "0 auto", textAlign: "center" },
+  ".cm-dialogue":   { width: "3.6in", margin: "0 auto" },
   ".cm-transition": { textAlign: "right", textTransform: "uppercase" },
   ".cm-heading":    { textAlign: "left", textTransform: "uppercase",
                       fontWeight: "bolder" },
@@ -41,9 +43,22 @@ const myTheme = EditorView.baseTheme({
     content: '""',
     display: "block",
     borderBottom: "1px solid #ccc",
-    margin: "0.75em 0",
+    margin: "1em 0",
   },
-
+  // ".cm-heading::before": {
+  //   content: '""',
+  //   display: "block",
+  //   borderBottom: "1px dotted #ccc",
+  //   margin: "0.75em 0",
+  // },
+  ".cm-heading::before": {
+    content: "attr(data-scene)",
+    position: "absolute",
+    left: 0,
+    width: "1in",
+    textAlign: "right",
+    fontWeight: "bold"
+  }
 });
 
 const pageMargins = EditorView.baseTheme({
@@ -86,14 +101,19 @@ export function buildEditor({ parent, screenplay = demoScript } = {}) {
           else if (mapping.type === "scene_heading") cls = "cm-heading";
           else if (mapping.type === "action")        cls = "cm-action";
           else if (mapping.type === "title")         cls = "cm-fp-title";
-          else if (mapping.type === "credit")        cls = "cm-center";
+          else if (mapping.type === "source")        cls = "cm-center";
           else if (mapping.type === "byline")        cls = "cm-center";
           else if (mapping.type === "date")          cls = "cm-right";
           else if (mapping.type === "contact")       cls = "cm-left";
           else if (mapping.type === "page_break")    cls = "cm-line-break";
           else                                       cls = "cm-body";
 
-        builder.add(from, from, Decoration.line({ class: cls }));
+        if (mapping.type === "scene_heading") {
+          // e.g. mapping.number === 12
+          builder.add(from, from, Decoration.line({ class: "cm-heading", attributes: { "data-scene": String(mapping.SceneNo) }}));
+        } else {
+          builder.add(from, from, Decoration.line({ class: cls }));
+        }
       }
       return builder.finish();
     }

@@ -42,9 +42,10 @@ export function toPlainText(json) {
   });
   newPage();
 
-  json.scenes.forEach(sc => {
+  json.scenes.forEach((sc, sceneIdx) => {
     sc.elements.forEach(el => {
       const { lines: elLines, meta: elLineMap } = explodeElement(el)
+      elLineMap[0]['SceneNo'] = sceneIdx
       lines.push(...elLines);
       lineMap.push(...elLineMap)
 
