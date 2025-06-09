@@ -67,7 +67,7 @@ export default function makeLibraryPage() {
       const json = JSON.parse(text);
       // TODO: validate `json` matches your screenplay schema
       // Hack: adjust format
-      json['elements'] = normalizeElements(json['elements'])
+      // json['elements'] = normalizeElements(json['elements'])
 
       const key = await putScript(json);
       message.textContent = `Imported script with ID ${key}.`;

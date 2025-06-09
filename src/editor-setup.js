@@ -14,23 +14,36 @@ import { EditorView, ViewPlugin, Decoration, keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { oneDark } from "@codemirror/theme-one-dark";
 
-import { screenplay as demoScript, toPlainText } from "./sample-script.js";
+import { screenplay as demoScript } from "./sample-script.js";
+import { toPlainText } from "./scrypt/element-utils.js"
+
 
 /*───────────────────────────────────────────────────────────────────────────*/
 /* 1. Styles & layout helpers                                               */
 /*─────────────────────────────────────────────────────────────────────────*/
 
 const myTheme = EditorView.baseTheme({
-  ".cm-content": { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt" },
-  ".cm-scroller": { lineHeight: "1.2" },
-  ".cm-char": { display: "inline-block", maxWidth: "100%", left: "50%",
-                transform: "translateX(-50%)", position: "relative",
-                textAlign: "center", marginBottom: ".6em",
-                textTransform: "uppercase", fontWeight: "bolder" },
-  ".cm-dialogue": { width: "4in", margin: "0 auto", textAlign: "center" },
+  ".cm-content":    { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt" },
+  ".cm-scroller":   { lineHeight: "1.2" },
+  ".cm-fp-title":   { fontWeight: "bold", textTransform: "uppercase", textAlign: "center", marginTop: "1in" },
+  ".cm-right":      { textAlign: "right" },
+  ".cm-left":       { textAlign: "left" },
+  ".cm-center":     { textAlign: "center" },
+  ".cm-char":       { display: "inline-block", maxWidth: "100%", left: "50%",
+                      transform: "translateX(-50%)", position: "relative",
+                      textAlign: "center", marginBottom: ".6em",
+                      textTransform: "uppercase", fontWeight: "bolder" },
+  ".cm-dialogue":   { width: "4in", margin: "0 auto", textAlign: "center" },
   ".cm-transition": { textAlign: "right", textTransform: "uppercase" },
-  ".cm-heading": { textAlign: "left", textTransform: "uppercase",
-                   fontWeight: "bolder" }
+  ".cm-heading":    { textAlign: "left", textTransform: "uppercase",
+                      fontWeight: "bolder" },
+  ".cm-line-break::after": {
+    content: '""',
+    display: "block",
+    borderBottom: "1px solid #ccc",
+    margin: "0.75em 0",
+  },
+
 });
 
 const pageMargins = EditorView.baseTheme({
@@ -43,7 +56,7 @@ const centerColumn = EditorView.baseTheme({
 
 /*──────────────────────────────────────────────────────────────────────────*/
 /* 2. Factory export                                                       */
-/*──────────────────────────────────────────────────────────── ───────────*/
+/*────────────────────────────────────────────────────────────────────────*/
 
 export function buildEditor({ parent, screenplay = demoScript } = {}) {
   if (!parent)
@@ -72,6 +85,12 @@ export function buildEditor({ parent, screenplay = demoScript } = {}) {
         } else if (mapping.type === "transition")    cls = "cm-transition";
           else if (mapping.type === "scene_heading") cls = "cm-heading";
           else if (mapping.type === "action")        cls = "cm-action";
+          else if (mapping.type === "title")         cls = "cm-fp-title";
+          else if (mapping.type === "credit")        cls = "cm-center";
+          else if (mapping.type === "byline")        cls = "cm-center";
+          else if (mapping.type === "date")          cls = "cm-right";
+          else if (mapping.type === "contact")       cls = "cm-left";
+          else if (mapping.type === "page_break")    cls = "cm-line-break";
           else                                       cls = "cm-body";
 
         builder.add(from, from, Decoration.line({ class: cls }));
@@ -88,6 +107,7 @@ export function buildEditor({ parent, screenplay = demoScript } = {}) {
         keymap.of(defaultKeymap),
         oneDark,
         EditorView.lineWrapping,
+        EditorView.editable.of(false),  // make it read-only
         myTheme,
         centerColumn
       ]
