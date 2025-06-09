@@ -1,0 +1,547 @@
+{
+  "titlePage": {
+    "title": "The Shining",
+    "source": "PRODUCED AND DIRECTED BY: STANLEY KUBRICK",
+    "date": "04 July 1980",
+    "copyright": "",
+    "byline": "Post Production Script. A STANLEY KUBRICK FILM",
+    "contact": ""
+  },
+  "scenes": [
+    {
+      "sceneNo": 0,
+      "id": "s1",
+      "elements": [
+        {
+          "type": "transition",
+          "id": "se2",
+          "text": "FADE IN:"
+        }
+      ]
+    },
+    {
+      "sceneNo": 1,
+      "id": "s3",
+      "elements": [
+        {
+          "type": "scene_heading",
+          "id": "se4",
+          "indicator": "EXT.",
+          "location": "COLORADO MOUNTAIN (U.S.A.)",
+          "time": "DAY",
+          "text": "EXT. COLORADO MOUNTAIN (U.S.A.) - DAY"
+        },
+        {
+          "type": "action",
+          "id": "se5",
+          "text": "Lake and Mountains. CAMERA TRACKS FORWARD past island in lake."
+        },
+        {
+          "type": "transition",
+          "id": "se6",
+          "text": "DISSOLVE TO:"
+        }
+      ]
+    },
+    {
+      "sceneNo": 2,
+      "id": "s7",
+      "elements": [
+        {
+          "type": "scene_heading",
+          "id": "se8",
+          "indicator": "EXT.",
+          "location": "ROAD",
+          "time": "DAY",
+          "text": "EXT. ROAD - DAY"
+        },
+        {
+          "type": "action",
+          "id": "se9",
+          "text": "High Angle V.W. Car moving along road - CAMERA TILTS UP with it."
+        },
+        {
+          "type": "transition",
+          "id": "se10",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se11",
+          "text": "Mountains and Road - V.W. Car moves away along road - CAMERA TRACKS after it."
+        },
+        {
+          "type": "transition",
+          "id": "se12",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se13",
+          "text": "L.S. V.W. Car moving away along road - CAMERA TRACKS after it and passes car - TRACKING FORWARD to Mountains in b.g."
+        },
+        {
+          "type": "transition",
+          "id": "se14",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se15",
+          "text": "M.L.S. High Angle V.W. Car moves away along road - CAMERA TILTS UP with it. Car goes into tunnel and comes out other side. CAMERA TRACKS after car."
+        },
+        {
+          "type": "transition",
+          "id": "se16",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se17",
+          "text": "L.S. V.W. Car moves along road. CAMERA TRACKS after it. Mountains in b.g."
+        },
+        {
+          "type": "transition",
+          "id": "se18",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se19",
+          "text": "L.S. High Angle V.W. Car moving away along road. Mountain in b.g. CAMERA TRACKS after car."
+        },
+        {
+          "type": "transition",
+          "id": "se20",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se21",
+          "text": "L.S. Mountain - CAMERA TRACKS IN on Hotel."
+        },
+        {
+          "type": "transition",
+          "id": "se22",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se23",
+          "text": "Black Frames."
+        },
+        {
+          "type": "action",
+          "id": "se24",
+          "text": "THE INTERVIEW."
+        },
+        {
+          "type": "transition",
+          "id": "se25",
+          "text": "CUT TO:"
+        }
+      ]
+    },
+    {
+      "sceneNo": 3,
+      "id": "s26",
+      "elements": [
+        {
+          "type": "scene_heading",
+          "id": "se27",
+          "indicator": "INT.",
+          "location": "OVERLOOK HOTEL/LOBBY",
+          "time": "DAY",
+          "text": "INT. OVERLOOK HOTEL/LOBBY - DAY"
+        },
+        {
+          "type": "action",
+          "id": "se28",
+          "text": "Jack walks L-R across Lobby. CAMERA TRACKS BACK & PANS with him to RECEPTIONIST behind desk."
+        },
+        {
+          "type": "dialogue",
+          "id": "se29",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Hi, I've got an appointment with Mr. Ullman. My name is Jack Torrance."
+        },
+        {
+          "type": "dialogue",
+          "id": "se30",
+          "character": "RECEPTIONIST",
+          "parenthetical": "",
+          "text": "His office is the first door on the left."
+        },
+        {
+          "type": "dialogue",
+          "id": "se31",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Thank you."
+        },
+        {
+          "type": "action",
+          "id": "se32",
+          "text": "JACK moves away R-L. CAMERA PANS with him and TRACKS IN after him through Secretary's office to open door of ULLMAN's office - revealing ULLMAN seated at desk with SECRETARY standing beside him."
+        },
+        {
+          "type": "dialogue",
+          "id": "se33",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Mr Ullman?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se34",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Yes?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se35",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "I'm Jack Torrance."
+        },
+        {
+          "type": "dialogue",
+          "id": "se36",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Oh, well - come on in Jack."
+        },
+        {
+          "type": "action",
+          "id": "se37",
+          "text": "ULLMAN stands up and hands book to SECRETARY, walking round side of desk. JACK moves into office. CAMERA TRACKS IN after him. He shakes hands with ULLMAN."
+        },
+        {
+          "type": "dialogue",
+          "id": "se38",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Very nice to meet you."
+        },
+        {
+          "type": "dialogue",
+          "id": "se39",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Nice to meet you, Mr. Ullman.`"
+        },
+        {
+          "type": "action",
+          "id": "se40",
+          "text": "ULLMAN points to SECRETARY."
+        },
+        {
+          "type": "dialogue",
+          "id": "se41",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "This is my secretary, Susie."
+        },
+        {
+          "type": "dialogue",
+          "id": "se42",
+          "character": "SECRETARY",
+          "parenthetical": "",
+          "text": "Hallo"
+        },
+        {
+          "type": "dialogue",
+          "id": "se43",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Susie, how do you do?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se44",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Have any trouble finding us?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se45",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Oh, no problem at all. I made the trip in three and a half hours."
+        },
+        {
+          "type": "dialogue",
+          "id": "se46",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Well, that's very good time, very\ngood. Please sit down a minute."
+        },
+        {
+          "type": "action",
+          "id": "se47",
+          "text": "ULLMAN points to chair cam.R. JACK sits cam.R.f.g. ULLMAN\nwalks behind desk."
+        },
+        {
+          "type": "dialogue",
+          "id": "se48",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Jack, just make yourself at home.\nWould you like some coffee?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se49",
+          "character": "JACK",
+          "parenthetical": "",
+          "text": "Well, if you are going to have some, I wouldn't mind. Thanks."
+        },
+        {
+          "type": "dialogue",
+          "id": "se50",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Susie."
+        },
+        {
+          "type": "dialogue",
+          "id": "se51",
+          "character": "SECRETARY",
+          "parenthetical": "",
+          "text": "Sure."
+        },
+        {
+          "type": "dialogue",
+          "id": "se52",
+          "character": "ULLMAN",
+          "parenthetical": "",
+          "text": "Oh, and would you ask Bill Watson\nto join us?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se53",
+          "character": "SECRETARY",
+          "parenthetical": "",
+          "text": "Yes, I will."
+        },
+        {
+          "type": "action",
+          "id": "se54",
+          "text": "ULLMAN sits behind desk. SUSIE walks forward to R.f.g."
+        },
+        {
+          "type": "transition",
+          "id": "se55",
+          "text": "DISSOLVE TO:"
+        }
+      ]
+    },
+    {
+      "sceneNo": 4,
+      "id": "s56",
+      "elements": [
+        {
+          "type": "scene_heading",
+          "id": "se57",
+          "indicator": "EXT.",
+          "location": "APARTMENT BUILDING/BOULDER",
+          "time": "DAY",
+          "text": "EXT. APARTMENT BUILDING/BOULDER - DAY"
+        },
+        {
+          "type": "action",
+          "id": "se58",
+          "text": "Apartment Building - cars parked in front of it. Mountain in b.g. CAMERA TRACKS IN on Apartment Building."
+        },
+        {
+          "type": "transition",
+          "id": "se59",
+          "text": "CUT TO:"
+        }
+      ]
+    },
+    {
+      "sceneNo": 5,
+      "id": "s60",
+      "elements": [
+        {
+          "type": "scene_heading",
+          "id": "se61",
+          "indicator": "",
+          "location": "JACK & WENDY'S APARTMENT IN BOULDER (USA) / LIVING ROOM",
+          "time": "DAY",
+          "text": " JACK & WENDY'S APARTMENT IN BOULDER (USA) / LIVING ROOM - DAY"
+        },
+        {
+          "type": "action",
+          "id": "se62",
+          "text": "DANNY is sitting at table eating a sandwich. WENDY sitting cam.R reading book."
+        },
+        {
+          "type": "dialogue",
+          "id": "se63",
+          "character": "DANNY",
+          "parenthetical": "",
+          "text": "Mom..."
+        },
+        {
+          "type": "dialogue",
+          "id": "se64",
+          "character": "WENDY",
+          "parenthetical": "",
+          "text": "Yeah."
+        },
+        {
+          "type": "dialogue",
+          "id": "se65",
+          "character": "DANNY",
+          "parenthetical": "",
+          "text": "Do you really want to go and live in that hotel for the winter?"
+        },
+        {
+          "type": "dialogue",
+          "id": "se66",
+          "character": "WENDY",
+          "parenthetical": "",
+          "text": "Sure, Danny, it will be lots of fun."
+        },
+        {
+          "type": "dialogue",
+          "id": "se67",
+          "character": "DANNY",
+          "parenthetical": "",
+          "text": "Yeah, I guess so. Anyway, there's hardly anybody to play with around here."
+        },
+        {
+          "type": "dialogue",
+          "id": "se68",
+          "character": "WENDY",
+          "parenthetical": "",
+          "text": "Yeah, I know. It always takes a\nlittle time to make new friends."
+        },
+        {
+          "type": "transition",
+          "id": "se69",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se70",
+          "text": "M.S. DANNY eating sandwich."
+        },
+        {
+          "type": "dialogue",
+          "id": "se71",
+          "character": "DANNY",
+          "parenthetical": "",
+          "text": "Yeah, I guess so."
+        },
+        {
+          "type": "transition",
+          "id": "se72",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se73",
+          "text": "M.S. WENDY"
+        },
+        {
+          "type": "dialogue",
+          "id": "se74",
+          "character": "WENDY",
+          "parenthetical": "",
+          "text": "What about Tony? He's looking forward to the hotel, I bet."
+        },
+        {
+          "type": "action",
+          "id": "se75",
+          "text": "M.S. DANNY while eating sandwich wiggles forefinger of his\nL.hand and speaks with different voice."
+        },
+        {
+          "type": "dialogue",
+          "id": "se76",
+          "character": "TONY",
+          "parenthetical": "",
+          "text": "I don't want to go there, Mrs. Torrance."
+        },
+        {
+          "type": "transition",
+          "id": "se77",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se78",
+          "text": "M.S. WENDY"
+        },
+        {
+          "type": "dialogue",
+          "id": "se79",
+          "character": "WENDY",
+          "parenthetical": "",
+          "text": "Well, how come you don't want to go?"
+        },
+        {
+          "type": "transition",
+          "id": "se80",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se81",
+          "text": "M.S. DANNY wiggles forefinger of L.hand and speaks with different voice."
+        },
+        {
+          "type": "dialogue",
+          "id": "se82",
+          "character": "TONY",
+          "parenthetical": "",
+          "text": "I just don't."
+        },
+        {
+          "type": "transition",
+          "id": "se83",
+          "text": "CUT TO:"
+        },
+        {
+          "type": "action",
+          "id": "se84",
+          "text": "M.S. WENDY."
+        },
+        {
+          "type": "dialogue",
+          "id": "se85",
+          "character": "WENDY",
+          "parenthetical": "",
+          "text": "Well, let's just wait and see. We're all gonna have a real good time."
+        }
+      ]
+    },
+    {
+      "sceneNo": 6,
+      "id": "s86",
+      "elements": [
+        {
+          "type": "scene_heading",
+          "id": "se87",
+          "indicator": "INT.",
+          "location": "OVERLOOK HOTEL/ULLMAN'S OFFICE",
+          "time": "DAY",
+          "text": "INT. OVERLOOK HOTEL/ULLMAN'S OFFICE - DAY"
+        },
+        {
+          "type": "action",
+          "id": "se88",
+          "text": "JACK over ULLMAN seated at desk. BILL WATSON enter office. JACK rises and shakes hands with him."
+        }
+      ]
+    }
+  ],
+  "metaData": {
+    "schemaVer": "v0.1",
+    "nextId": 88
+  }
+}
