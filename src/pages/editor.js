@@ -1,19 +1,23 @@
-import { createEditorView } from "../editor-view.js";
-import { DocController } from "../doc-controller.js";
+import { EditorController } from "../controllers/editor-controller.js";
+import { createEditorView } from "../views/editor-view.js";
+import { getCurrentScrypt } from "../state/current-scrypt.js";
 
-export default function makeEditorPage(scriptObj) {
-  const wrapper = document.createElement("div");
+export default function makeEditorPage() {
+  const scrypt = getCurrentScrypt();
+  if (!scrypt) throw new Error("No script loaded");
+
+  const controller= new EditorController();
+
+  /* layout wrapper with gutters */
+  const wrapper   = document.createElement("div");
   wrapper.className = "editor-page";
-
-  // gutters
   wrapper.appendChild(document.createElement("div"));
   const centre = document.createElement("div");
   centre.className = "editor-centre";
   wrapper.appendChild(centre);
   wrapper.appendChild(document.createElement("div"));
 
-  // buildEditor({ parent: centre, screenplay: scriptObj });
-  const controller = new DocController(scriptObj);
   createEditorView({ parent: centre, controller });
+
   return wrapper;
 }

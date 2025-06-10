@@ -46,7 +46,7 @@ This project uses **JSPM import maps** for all JavaScript dependencies:
 1. [Install JSPM CLI if needed](https://jspm.org/docs/getting-started):
 
    ```sh
-   npm npm install --save-dev jspm
+   npm install --save-dev jspm
    ```
    
 2. If the importing file is not pulled in by an existing path, add the new root to  `exports` field in `package.json` to ensure inclusion in the generated `importmap.js`.

@@ -1,14 +1,13 @@
-import { toLinesAndMap } from "./scrypt/element-utils.js";
+import { toLinesAndMap } from "../scrypt/element-utils.js";
+import { getCurrentScrypt } from "../state/current-scrypt.js";
 
-export class DocController {
-  constructor(json) {
-    this.json = json;
-
-    const { lines , lineMap } = toLinesAndMap(json);
+export class EditorController {
+  constructor() {
+    this.scrypt = getCurrentScrypt();
+    const { lines , lineMap } = toLinesAndMap(this.scrypt);
     this.lines = lines;
     this.lineMeta = lineMap
     this.selectedId = null;
-    // this.state = EditorState.create({ doc: this.lines.join("\n") });
     this.elementPositions = {};
     this.lineMeta.forEach((m, idx) => {
       if (m && m.id != null) {
@@ -26,7 +25,7 @@ export class DocController {
   }
 
   setSelected(id) {
-    console.log("selectedId:", id)
+    // console.log("selectedId:", id)
     this.selectedId = id;
   }
 

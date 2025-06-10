@@ -1,5 +1,8 @@
 import "./components/app-sidebar.js";
-import { mountPage } from "./router.js";
+import { Scrypt } from './scrypt/scrypt.js';
+import { setCurrentScrypt } from './state/current-scrypt.js';
+import { mountPage } from './router.js';
+import {setCurrentScriptId} from "./state/state.js";
 
 /* one-time guard for dev server */
 if (!window.__scryptPwaBooted) {
@@ -12,10 +15,17 @@ if (!window.__scryptPwaBooted) {
       mountPage(ev.detail);
     });
 
-    document.body.addEventListener("load-script", ev => {
-      console.log("Load Scrypt event:", ev.detail);
-      const scriptObj = ev.detail;
-      mountPage("editor", scriptObj);
+    window.addEventListener('open-scrypt', async (e) => {
+      const { id, view = 'editor' } = e.detail;
+      const s = await Scrypt.load(id);
+      if (!s) {
+        console.error(`Script ${id} failed to load`);
+        return;
+      }
+
+      setCurrentScriptId(id);
+      setCurrentScrypt(s);
+      mountPage(view);               // router handles any valid view
     });
 
     /* initial splash */

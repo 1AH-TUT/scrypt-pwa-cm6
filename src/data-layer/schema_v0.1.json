@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://example.com/schemata/schema_v0.1.json",
+  "title": "Screenplay Scrypt JSON",
+  "type": "object",
+  "required": ["titlePage", "data", "metaData"],
+  "properties": {
+    "titlePage": {
+      "type": "object",
+      "required": ["title", "byline", "date"],
+      "properties": {
+        "title": { "type": "string" },
+        "byline": { "type": "string" },
+        "date": { "type": "string" },
+        "source": { "type": "string", "default": "" },
+        "copyright": { "type": "string", "default": "" },
+        "contact": { "type": "string", "default": "" }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "type": "object",
+      "required": ["scenes"],
+      "properties": {
+        "scenes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/scene" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "metaData": {
+      "type": "object",
+      "required": ["schemaVer", "nextId"],
+      "properties": {
+        "schemaVer": { "type": "string" },
+        "nextId": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+
+  "$defs": {
+    "scene": {
+      "type": "object",
+      "required": ["sceneNo", "id", "elements"],
+      "properties": {
+        "sceneNo": { "type": "integer", "minimum": 0 },
+        "id": { "type": "string" },
+        "elements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/element" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "element": {
+      "type": "object",
+      "required": ["type", "id", "text"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["scene_heading", "action", "transition", "dialogue"]
+        },
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "indicator": { "type": "string", "default": "" },
+        "location": { "type": "string", "default": "" },
+        "time": { "type": "string", "default": "" },
+        "character": { "type": "string", "default": "" },
+        "parenthetical": { "type": "string", "default": "" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "scene_heading" } }
+          },
+          "then": {
+            "required": ["indicator", "location", "time"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "dialogue" } }
+          },
+          "then": {
+            "required": ["character", "parenthetical"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

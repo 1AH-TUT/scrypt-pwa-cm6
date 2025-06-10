@@ -1,5 +1,6 @@
 // src/pages/library.js
-import { putScript, getAllScripts, deleteScript } from "../db.js";
+import { validateScrypt } from '../data-layer/validator.js';
+import { saveScrypt, deleteScrypt, getAllScryptMetas } from "../data-layer/db.js";
 
 export default function makeLibraryPage() {
   const wrapper = document.createElement("div");
@@ -29,19 +30,18 @@ export default function makeLibraryPage() {
   // Render the current scripts in DB
   async function refreshList() {
     list.innerHTML = "";
-    const scripts = await getAllScripts();
+    const scripts = await getAllScryptMetas();
     scripts.forEach(s => {
       const li = document.createElement("li");
-      li.textContent = s.title || `Script #${s.id}`;
+      li.textContent = (s.titlePage?.title ?? `Script #${s.id}`);
       
       // Load button
       const loadBtn = document.createElement("button");
       loadBtn.textContent = "Load";
       loadBtn.onclick = () =>
-        wrapper.dispatchEvent(new CustomEvent("load-script", {
-          detail: s,
-          bubbles: true,
-          composed: true
+        wrapper.dispatchEvent(new CustomEvent('open-scrypt', {
+          detail: { id: s.id, view: 'editor' },
+          bubbles: true, composed: true
         }));
       li.appendChild(loadBtn);
 
@@ -49,7 +49,7 @@ export default function makeLibraryPage() {
       const delBtn = document.createElement("button");
       delBtn.textContent = "Delete";
       delBtn.onclick = async () => {
-        await deleteScript(s.id);
+        await deleteScrypt(s.id);
         refreshList();
       };
       li.appendChild(delBtn);
@@ -58,21 +58,26 @@ export default function makeLibraryPage() {
     });
   }
 
-  // Handle file selection
+   // Handle file selection
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
     if (!file) return;
     try {
       const text = await file.text();
-      const json = JSON.parse(text);
-      // TODO: validate `json` matches your screenplay schema
-      // Hack: adjust format
-      // json['elements'] = normalizeElements(json['elements'])
+      const obj = JSON.parse(text);
 
-      const key = await putScript(json);
-      message.textContent = `Imported script with ID ${key}.`;
+      const { ok, errors } = await validateScrypt(obj);
+      if (!ok) {
+        const msg = errors.map(e => `${e.instancePath} ${e.message}`).join('; ');
+        throw new Error(`Invalid screenplay JSON: ${msg}`);
+      }
+
+      delete obj.id;
+      const id = await saveScrypt(obj);
+
+      message.textContent = `Imported script with ID ${id}.`;
       message.style.color = "green";
-      fileInput.value = "";  // reset
+      fileInput.value = "";
       await refreshList();
     } catch (err) {
       console.error(err);
@@ -85,61 +90,4 @@ export default function makeLibraryPage() {
   refreshList();
 
   return wrapper;
-}
-
-function normalizeElements(elements) {
-  return elements.map(el => {
-    const {
-      type,
-      transition,
-      action,
-      dialogue,
-      heading,
-      location,
-      time,
-      character,
-      parenthetical,
-      ...rest
-    } = el;
-
-    let text;
-    switch (type) {
-      case "transition":
-        text = transition;
-        break;
-
-      case "action":
-        text = action;
-        break;
-
-      case "dialogue":
-        text = dialogue;
-        break;
-
-      case "scene_heading":
-        // Clean up whitespace and assemble:
-        const h = (heading   || "").trim();   // e.g. "EXT."
-        const loc = (location || "").trim();  // e.g. "VENICE"
-        const t   = (time     || "").trim();  // e.g. "NIGHT"
-        // If heading already ends with a period, no extra dot
-        const head = h.endsWith(".") ? h : h + ".";
-        // Join with spaces and an em-dash
-        text = [head, loc, t]
-                 .filter(Boolean)
-                 .join(" ")
-                 .replace(/ ([^ ]+)$/, " — $1");
-        break;
-
-      default:
-        text = "";
-    }
-
-    return {
-      type,
-      ...(character     && { character }),
-      ...(parenthetical && { parenthetical }),
-      text,
-      ...rest
-    };
-  });
 }

@@ -1,23 +1,41 @@
-const CACHE = 'cm6-v1.004';
+const CACHE = 'cm6-v1.005';
 const ASSETS = [
   '/',
   'index.html',
   'manifest.webmanifest',
   'importmap.js',
   'styles/theme.css',
-  'src/router.js',
+
+  // Main App JS
   'src/main.js',
-  'src/db.js',
-  'src/sample-script.js',
-  'src/editor-view.js',
-  "src/doc-controller.js",
+  'src/router.js',
+
+  // Components & Controllers
+  'src/components/app-sidebar.js',
+  'src/controllers/editor-controller.js',
+
+  // Data Layer
+  'src/data-layer/db.js',
+  'src/data-layer/validator.js',
+  'src/data-layer/schema_v0.1.json',
+
+  // Pages
   'src/pages/editor.js',
   'src/pages/library.js',
   'src/pages/splash.js',
-  'assets/icons/apple-touch-icon.png',
-  'assets/icons/favicon-32.png',
-  'assets/icons/icon-192.png',
-  'assets/icons/icon-512.png',
+
+  // Scrypt logic
+  'src/scrypt/element-utils.js',
+  'src/scrypt/scrypt.js',
+
+  // State
+  'src/state/current-scrypt.js',
+  'src/state/state.js',
+
+  // Views
+  'src/views/editor-view.js',
+
+  // Fonts
   'assets/fonts/CourierPrime.ttf',
   'assets/fonts/CourierPrime-Italic.ttf',
   'assets/fonts/CourierPrime-Bold.ttf',
@@ -30,6 +48,12 @@ const ASSETS = [
   'assets/fonts/CourierPrimeSans-Italic.woff2',
   'assets/fonts/CourierPrimeSans-Bold.woff2',
   'assets/fonts/CourierPrimeSans-BoldItalic.woff2',
+
+  // Icons
+  'assets/icons/apple-touch-icon.png',
+  'assets/icons/favicon-32.png',
+  'assets/icons/icon-192.png',
+  'assets/icons/icon-512.png'
 ];
 
 // During install, cache the app shell

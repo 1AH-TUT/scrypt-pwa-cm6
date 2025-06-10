@@ -42,7 +42,7 @@ export function toLinesAndMap(json) {
   });
   newPage();
 
-  json.scenes.forEach((sc, sceneIdx) => {
+  json.data.scenes.forEach((sc, sceneIdx) => {
     sc.elements.forEach(el => {
       const { lines: elLines, meta: elLineMap } = explodeElement(el)
       elLineMap[0]['SceneNo'] = sceneIdx
@@ -54,6 +54,5 @@ export function toLinesAndMap(json) {
     });
   });
 
-  // return { text: lines.join("\n"), lineMap };
   return { lines, lineMap };
 }

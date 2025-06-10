@@ -12,23 +12,17 @@
 ({
   "imports": {
     "scrypt-cm6": "./src/main.js",
-    "scrypt-cm6/app-sidebar": "./src/components/app-sidebar.js",
-    "scrypt-cm6/editor-setup": "./src/editor-setup.js"
+    "scrypt-cm6/app-sidebar": "./src/components/app-sidebar.js"
   },
   "scopes": {
     "./": {
-      "@codemirror/commands": "https://ga.jspm.io/npm:@codemirror/commands@6.8.1/dist/index.js",
       "@codemirror/state": "https://ga.jspm.io/npm:@codemirror/state@6.5.2/dist/index.js",
       "@codemirror/theme-one-dark": "https://ga.jspm.io/npm:@codemirror/theme-one-dark@6.1.2/dist/index.js",
       "@codemirror/view": "https://ga.jspm.io/npm:@codemirror/view@6.37.1/dist/index.js",
+      "ajv": "https://ga.jspm.io/npm:ajv@8.17.1/dist/dev.ajv.js",
+      "ajv-formats": "https://ga.jspm.io/npm:ajv-formats@3.0.1/dist/index.js",
       "idb": "https://ga.jspm.io/npm:idb@8.0.3/build/index.js",
       "lit": "https://ga.jspm.io/npm:lit@3.3.0/index.js"
-    },
-    "https://ga.jspm.io/npm:@codemirror/commands@6.8.1/": {
-      "@codemirror/language": "https://ga.jspm.io/npm:@codemirror/language@6.11.1/dist/index.js",
-      "@codemirror/state": "https://ga.jspm.io/npm:@codemirror/state@6.5.2/dist/index.js",
-      "@codemirror/view": "https://ga.jspm.io/npm:@codemirror/view@6.37.1/dist/index.js",
-      "@lezer/common": "https://ga.jspm.io/npm:@lezer/common@1.2.3/dist/index.js"
     },
     "https://ga.jspm.io/npm:@codemirror/language@6.11.1/": {
       "@codemirror/state": "https://ga.jspm.io/npm:@codemirror/state@6.5.2/dist/index.js",
@@ -53,6 +47,15 @@
     },
     "https://ga.jspm.io/npm:@lezer/highlight@1.2.1/": {
       "@lezer/common": "https://ga.jspm.io/npm:@lezer/common@1.2.3/dist/index.js"
+    },
+    "https://ga.jspm.io/npm:ajv-formats@3.0.1/": {
+      "ajv": "https://ga.jspm.io/npm:ajv@8.17.1/dist/dev.ajv.js",
+      "ajv/dist/compile/codegen": "https://ga.jspm.io/npm:ajv@8.17.1/dist/compile/codegen/index.js"
+    },
+    "https://ga.jspm.io/npm:ajv@8.17.1/": {
+      "fast-deep-equal": "https://ga.jspm.io/npm:fast-deep-equal@3.1.3/index.js",
+      "fast-uri": "https://ga.jspm.io/npm:fast-uri@3.0.6/index.js",
+      "json-schema-traverse": "https://ga.jspm.io/npm:json-schema-traverse@1.0.0/index.js"
     },
     "https://ga.jspm.io/npm:lit-element@4.2.0/": {
       "@lit/reactive-element": "https://ga.jspm.io/npm:@lit/reactive-element@2.1.0/development/reactive-element.js",

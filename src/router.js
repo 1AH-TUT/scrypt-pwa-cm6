@@ -1,15 +1,31 @@
+// src/router.js
 import * as pages from "./pages/index.js";
 
 const slot = document.getElementById("page-slot");
-export function mountPage(name, scriptObj) {
+
+/**
+ * Mounts one of your pages into #page-slot.
+ * @param {"splash"|"library"|"editor"} name
+ * @param {number=} payload  // for editor, the script ID
+ */
+export function mountPage(name) {
   console.log("Mounting Page:", name);
   slot.innerHTML = "";
 
-  let make = pages['splash'];
-  if (name === "editor") make = () => pages[name](scriptObj);
-  else if (name === "library") make = pages[name];
+  let pageEl;
+  switch (name) {
+    case "editor":
+      pageEl = pages.editor();
+      break;
 
-  // call it and append its return value to 'page-slot'
-  const pageEl = make();
+    case "library":
+      pageEl = pages.library();
+      break;
+
+    default:  // "splash" or anything else
+      pageEl = pages.splash();
+      break;
+  }
+
   slot.appendChild(pageEl);
 }
