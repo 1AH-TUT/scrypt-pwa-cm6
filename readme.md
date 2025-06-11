@@ -8,7 +8,7 @@ A minimal, no-build, offline-first Progressive Web App using CodeMirror 6 as a s
 ### 1. Clone the repository
 
 ```sh
-git clone git@github.com:1AH-TUT/scrypt-pwa-cm6.git
+git clone https://github.com/1AH-TUT/scrypt-pwa-cm6.git
 cd scrypt-pwa-cm6
 ````
 
