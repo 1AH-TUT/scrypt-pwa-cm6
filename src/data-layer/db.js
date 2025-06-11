@@ -47,7 +47,7 @@ export async function getScrypt(id) {
  */
 export async function saveScrypt(scrypt) {
   const db = await dbPromise;
-  // Ensure id exists for updates, or let auto-increment create one
+  // Assign id for updates, let auto-increment handle new records
   const meta = {
     titlePage: scrypt.titlePage,
     metaData: scrypt.metaData

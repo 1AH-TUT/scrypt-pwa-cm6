@@ -123,7 +123,7 @@ class LitBlockWidget extends WidgetType {
     });
 
     // swallow Esc / Tab so CM doesn't treat them as normal keys
-    el.stopEvent = e => (e.key === 'Escape' || e.key === 'Tab');
+    // el.stopEvent = e => (e.key === 'Escape' || e.key === 'Tab');
     return node;
   }
 }
@@ -329,52 +329,6 @@ function elementHighlighter(controller) {
     decorations: v => v.decorations
   });
 }
-
-// /** Show the modal widget, wire save/cancel */
-// function openActionWidget(id, controller, view) {
-//   const el    = controller.scrypt._findElementById(id);
-//   const host  = ensureWidgetHost();
-//   host.innerHTML = '';
-//   host.style.display = 'grid';
-//
-//   const widget = document.createElement('edit-action');
-//   widget.text  = el.text;
-//   host.appendChild(widget);
-//
-//   widget.addEventListener('cancel', () => host.style.display = 'none');
-//   widget.addEventListener('save',    e => {
-//     host.style.display = 'none';
-//     applyActionPatch(id, e.detail.text, controller, view);
-//   });
-// }
-//
-// /** Mutate JSON, re-index lines, refresh view, log transaction */
-// function applyActionPatch(id, newText, controller, view) {
-//   const before = structuredClone(controller.scrypt._findElementById(id));
-//
-//   // 1. update canonical JSON
-//   controller.scrypt.updateElement(id, { text: newText });
-//
-//   // 2. incremental line-map fix-up
-//   controller.reindex(id);
-//
-//   // 3. tell CM6 to rebuild decorations/layout
-//   view.dispatch({
-//     effects: EditorState.reconfigure.of([
-//       screenplayLayout(controller),
-//       elementHighlighter(controller)
-//     ])
-//   });
-//
-//   // 4. record a session transaction (simple undo later)
-//   sessionTransactions.push({
-//     ts: Date.now(),
-//     type: 'update',
-//     id,
-//     before,
-//     after: { ...before, text: newText }
-//   });
-// }
 
 
 /*

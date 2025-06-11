@@ -6,7 +6,7 @@ import { saveScrypt, getScrypt} from "../data-layer/db.js";
  */
 export class Scrypt extends EventTarget {
   /**
-   * @param {{ id: int, metaData: object, titlePage: object, data: object }} fullJson
+   * @param {{ id?: int, metaData: object, titlePage: object, data: object }} fullJson
    */
   constructor(fullJson) {
     super();
