@@ -7,7 +7,7 @@ let validateFn = null;
 /** Lazy‐load & compile the JSON‐Schema only once */
 async function initValidator() {
   if (validateFn) return;
-  const resp   = await fetch('/src/data-layer/schema_v0.1.json');
+  const resp   = await fetch('src/data-layer/schema_v0.1.json');
   const schema = await resp.json();
   const ajv    = new Ajv({ allErrors: true, strict: false });
   addFormats(ajv);
