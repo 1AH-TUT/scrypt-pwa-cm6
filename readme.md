@@ -1,6 +1,6 @@
 # Scrypt CM6 PWA Playground
 
-A minimal, no-build, offline-first Progressive Web App for experimenting with CodeMirror 6 as a screenplay/script editor.
+A minimal, no-build, offline-first Progressive Web App using CodeMirror 6 as a screenplay/script editor.
 
 ## Quick Start
 (assumes `npm` & `npx`)
@@ -56,7 +56,6 @@ This project uses **JSPM import maps** for all JavaScript dependencies:
       "exports": {
         ".": "./src/main.js",
         "./app-sidebar": "./src/components/app-sidebar.js",
-        "./editor-setup": "./src/editor-setup.js"
       }
     }
     ```
@@ -96,23 +95,42 @@ manifest.webmanifest    # PWA manifest (icons, name, colors, display)
 package.json            # Project metadata, JSPM “exports” roots, devDependencies
 readme.md               # This overview, Quick Start, Dependency Management, Project Layout, etc.
 sw.js                   # Service worker: offline-first app shell & JSPM CDN caching
+
+assets/
+  fonts/                # Courier Prime font family (TTF, WOFF2)
+  icons/                # PWA and browser icons
+
+dev/
+  data/                 # Sample/demo scripts in JSON format
+  python/               # Utility scripts for export/dump (not required to run app)
+
 styles/
   theme.css             # Global design tokens & layout CSS
-icons/                  # PWA icons
-python/
-  dump_files_to_md.py   # Utility to dump selected repository files into markdown
-  file_dump.md          # Output of dump_files_to_md.py (for AI assistance)
+
 src/
-  main.js               # App bootstrap: imports deps, wires sidebar “nav” → router, initial mount
-  editor-setup.js       # CodeMirror 6 factory: builds & configures the screenplay editor
-  sample-script.js      # Demo screenplay JSON + trial `toPlainText` mapper
-  router.js             # Dynamic page loader: `import()`s pages into page-slot
+  main.js               # App bootstrap: registers nav/listeners, handles event routing, initial page mount
+  router.js             # Static router: mounts page modules into #page-slot
   components/
-    app-sidebar.js      # `<app-sidebar>` Lit component: collapsible, left sidebar nav
+    app-sidebar.js      # <app-sidebar> Lit component for sidebar navigation
+  controllers/
+    editor-controller.js# Editor page controller: manages line meta and selection
+  data-layer/
+    db.js               # IndexedDB access: load/save/delete scrypts
+    schema_v0.1.json    # JSON Schema for script validation
+    validator.js        # Ajv-powered JSON validator, loads schema at runtime
   pages/
-    editor.js           # Editor page: 3-column layout, calls `buildEditor({ parent })`
-    library.js          # Library page: Manage Scrypts, Import/Open etc.
-    splash.js           # Splash page: placeholder for PWA-style welcome/loading screen
+    editor.js           # Editor page: loads current script, creates controller, CM6 view
+    library.js          # Library page: browse/import/delete scripts
+    splash.js           # Splash page: PWA welcome/loading screen
+    index.js            # Page export barrel (optional, for router)
+  scrypt/
+    scrypt.js           # Scrypt class: canonical screenplay object, autosave logic
+    element-utils.js    # Helpers to explode elements into lines + meta for CM6
+  state/
+    current-scrypt.js   # Holds current in-memory Scrypt object
+    state.js            # Script ID/session tracking for current/last script
+  views/
+    editor-view.js      # CodeMirror 6 setup: layout, highlighting, navigation, selection
 ```
 
 ---
