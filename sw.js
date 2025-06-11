@@ -1,6 +1,5 @@
 const CACHE = 'cm6-v1.005';
 const ASSETS = [
-  '/',
   'index.html',
   'manifest.webmanifest',
   'importmap.js',
