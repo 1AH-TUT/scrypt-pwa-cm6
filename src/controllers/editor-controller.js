@@ -37,4 +37,20 @@ export class EditorController {
           .map(m => m.id)
     )];
   }
+
+    /** Rebuild lines + maps after a JSON mutation */
+  reindex() {
+    const { lines, lineMap } = toLinesAndMap(this.scrypt);
+    this.lines   = lines;
+    this.lineMeta = lineMap;
+
+    // Recompute elementPositions
+    this.elementPositions = {};
+    this.lineMeta.forEach((m, idx) => {
+      if (m && m.id != null) {
+        (this.elementPositions[m.id] ||= { start: idx }).end = idx;
+      }
+    });
+  }
+
 }

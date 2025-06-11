@@ -8,6 +8,7 @@ const ASSETS = [
   // Main App JS
   'src/main.js',
   'src/router.js',
+  'src/widget-host.js',
 
   // Components & Controllers
   'src/components/app-sidebar.js',

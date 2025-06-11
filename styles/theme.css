@@ -64,6 +64,7 @@
   /* Screenplay editor typography */
   --font-screenplay: "Courier Prime", Courier, monospace;
   --font-ui:         "Courier Prime Sans", "Courier Prime", monospace;
+  --font-size-screenplay: 12pt;
 
   /* header */
   --bg-header:      #1e1e1e;
@@ -156,6 +157,7 @@ app-sidebar#sidebar-left {
 .editor-centre {
   max-width:8.5in;      /* screenplay width cap */
   width:100%;
+  font-size: var(--font-size-screenplay);
 }
 
 /*────────────────────────────────────────────────────────────────────────*/

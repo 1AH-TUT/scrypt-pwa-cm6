@@ -1,6 +1,136 @@
-import { EditorState, RangeSetBuilder } from "@codemirror/state";
-import { EditorView, ViewPlugin, Decoration, keymap } from "@codemirror/view";
+import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
+import { EditorView, ViewPlugin, Decoration, keymap, WidgetType } from "@codemirror/view";
+
 import { oneDark } from "@codemirror/theme-one-dark";
+import '../components/edit-action.js';
+
+/* Reusable extension builder */
+export const buildExtensions = controller => [
+  editingField,
+  makeEditDecorationField(controller),
+  interceptEnter(controller),
+  screenplayLayout(controller),
+  elementSelector(controller),
+  elementHighlighter(controller),
+  elementNavigator(controller),
+  EditorView.editable.of(false),
+  focusable,
+  EditorView.lineWrapping,
+  oneDark,
+  myTheme
+];
+
+
+
+// --- Editing Effects and Field ---
+export const beginEdit = StateEffect.define();   // value: { id }
+export const endEdit   = StateEffect.define();   // value: null
+
+export const editingField = StateField.define({
+  create: () => null,
+  update(value, tr) {
+    for (const e of tr.effects) {
+      if (e.is(beginEdit)) return e.value;   // {id}
+      if (e.is(endEdit))   return null;
+    }
+    return value;
+  }
+});
+
+function makeEditDecorationField(controller) {
+  return StateField.define({
+    create: () => Decoration.none,
+
+    update(decos, tr) {
+      // Map existing decorations through document changes
+      if (tr.docChanged) decos = decos.map(tr.changes);
+
+      // Look for beginEdit / endEdit effects
+      for (const e of tr.effects) {
+        if (e.is(endEdit)) return Decoration.none;
+
+        if (e.is(beginEdit)) {
+          const { id } = e.value;
+          const { start, end } = controller.elementPositions[id];
+          const doc  = tr.newDoc;
+          const from = doc.line(start + 1).from;
+          const to   = end + 1 <= doc.lines
+                     ? doc.line(end + 1).to
+                     : doc.length;
+
+          return Decoration.set([
+            Decoration.replace({
+              block: true,
+              widget: new LitBlockWidget(controller, id)
+            }).range(from, to)
+          ]);
+        }
+      }
+      return decos;
+    },
+
+    provide: f => EditorView.decorations.from(f)
+  });
+}
+
+class LitBlockWidget extends WidgetType {
+  constructor(controller, id){ super(); this.controller = controller; this.id = id; }
+  eq(other){ return other.id === this.id; }
+  toDOM(view){
+    const node = document.createElement('div');
+    const el   = document.createElement('edit-action');
+    el.text    = this.controller.scrypt._findElementById(this.id).text;
+    node.appendChild(el);
+
+    el.addEventListener('cancel', () => {
+     // 1) End the edit widget
+     view.dispatch({ effects: endEdit.of(null) });
+
+     // 2) Restore the cursor onto the same element
+     const { start } = this.controller.elementPositions[this.id];
+     const pos = view.state.doc.line(start + 1).from;
+     view.dispatch({ selection: { anchor: pos } });
+
+     // 3) Re-focus CM6
+     setTimeout(() => view.focus(), 0);
+    });
+
+    el.addEventListener('save', e => {
+      // 1. Persist JSON
+      this.controller.scrypt.updateElement(this.id, { text: e.detail.text });
+
+      // 2. Re-index controller & replace the whole doc
+      this.controller.reindex();
+      const newDoc = this.controller.text;
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: newDoc },
+        effects: [
+          endEdit.of(null),
+          StateEffect.reconfigure.of(buildExtensions(this.controller))
+        ]
+      });
+
+      // 3. Move cursor to the next element
+      const ids       = this.controller.elementOrder();
+      const idx       = ids.indexOf(this.id);
+      const nextId    = ids[(idx + 1) % ids.length];
+      const { start } = this.controller.elementPositions[nextId];
+      const pos       = view.state.doc.line(start + 1).from;
+      view.dispatch({ selection: { anchor: pos } });
+
+      // 4. Refocus CM6
+      setTimeout(() => view.focus(), 0);
+    });
+
+    // swallow Esc / Tab so CM doesn't treat them as normal keys
+    el.stopEvent = e => (e.key === 'Escape' || e.key === 'Tab');
+    return node;
+  }
+}
+
+/*
+  *** Extensions ***
+*/
 
 /* CSS is here */
 const myTheme = EditorView.baseTheme({
@@ -30,25 +160,6 @@ const myTheme = EditorView.baseTheme({
 });
 
 const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
-
-// Intercept Enter at the DOM level
-const interceptEnterPlugin = ViewPlugin.fromClass(
-  class { },
-  {
-    eventHandlers: {
-      keydown(event, view) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          // TODO: fire “open edit widget” logic
-          console.log("Enter intercepted!")
-          return true; // claim the event
-        }
-        return false;
-      }
-    }
-  }
-);
-
 
 function screenplayLayout(controller) {
   return ViewPlugin.fromClass(class {
@@ -99,6 +210,18 @@ function screenplayLayout(controller) {
   }, { decorations: v => v.decorations });
 }
 
+function interceptEnter(controller){
+  return keymap.of([{
+    key:'Enter',
+    run(view){
+      const ln   = view.state.doc.lineAt(view.state.selection.main.head).number-1;
+      const meta = controller.lineMeta[ln];
+      if (meta?.type !== 'action') return false;
+      view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
+      return true;
+    }
+  }]);
+}
 function elementNavigator(controller) {
   // Helper: move selection to the first line of element `targetId`
   const gotoElement = (view, targetId) => {
@@ -207,23 +330,63 @@ function elementHighlighter(controller) {
   });
 }
 
+// /** Show the modal widget, wire save/cancel */
+// function openActionWidget(id, controller, view) {
+//   const el    = controller.scrypt._findElementById(id);
+//   const host  = ensureWidgetHost();
+//   host.innerHTML = '';
+//   host.style.display = 'grid';
+//
+//   const widget = document.createElement('edit-action');
+//   widget.text  = el.text;
+//   host.appendChild(widget);
+//
+//   widget.addEventListener('cancel', () => host.style.display = 'none');
+//   widget.addEventListener('save',    e => {
+//     host.style.display = 'none';
+//     applyActionPatch(id, e.detail.text, controller, view);
+//   });
+// }
+//
+// /** Mutate JSON, re-index lines, refresh view, log transaction */
+// function applyActionPatch(id, newText, controller, view) {
+//   const before = structuredClone(controller.scrypt._findElementById(id));
+//
+//   // 1. update canonical JSON
+//   controller.scrypt.updateElement(id, { text: newText });
+//
+//   // 2. incremental line-map fix-up
+//   controller.reindex(id);
+//
+//   // 3. tell CM6 to rebuild decorations/layout
+//   view.dispatch({
+//     effects: EditorState.reconfigure.of([
+//       screenplayLayout(controller),
+//       elementHighlighter(controller)
+//     ])
+//   });
+//
+//   // 4. record a session transaction (simple undo later)
+//   sessionTransactions.push({
+//     ts: Date.now(),
+//     type: 'update',
+//     id,
+//     before,
+//     after: { ...before, text: newText }
+//   });
+// }
+
+
+/*
+  *** Create the View ***
+*/
+
 export function createEditorView({ parent, controller }) {
   if (!controller) throw new Error("createEditorView: controller missing");
 
   const state = EditorState.create({
     doc: controller.text,
-    extensions: [
-      interceptEnterPlugin,
-      screenplayLayout(controller),
-      elementSelector(controller),
-      elementHighlighter(controller),
-      elementNavigator(controller),
-      EditorView.editable.of(false),
-      focusable,
-      EditorView.lineWrapping,
-      oneDark,
-      myTheme
-    ]
+    extensions: buildExtensions(controller)
   });
 
   const view = new EditorView({ parent, state });

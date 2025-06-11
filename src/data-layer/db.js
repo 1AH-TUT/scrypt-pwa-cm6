@@ -57,8 +57,14 @@ export async function saveScrypt(scrypt) {
   }
   // Store meta (creates id if new)
   const key = await db.put(META_STORE, meta);
-  // Always update the data (use the key we just wrote)
+
+  // Ensure scrypt.id for new entries
+  scrypt.id = key;
+
+  // Update the data
   await db.put(DATA_STORE, { id: key, data: scrypt.data });
+
+  console.debug("Saved Scrypt id:", key)
   return key;
 }
 

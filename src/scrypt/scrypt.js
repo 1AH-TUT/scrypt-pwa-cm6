@@ -6,7 +6,7 @@ import { saveScrypt, getScrypt} from "../data-layer/db.js";
  */
 export class Scrypt extends EventTarget {
   /**
-   * @param {{ meta: object, titlePage: object, data: object }} fullJson
+   * @param {{ id: int, metaData: object, titlePage: object, data: object }} fullJson
    */
   constructor(fullJson) {
     super();
@@ -14,7 +14,7 @@ export class Scrypt extends EventTarget {
     this.metaData   = fullJson.metaData;
     this.titlePage  = fullJson.titlePage;
     this.data       = fullJson.data;     // { scenes: [...] }
-    this.id         = fullJson.metaData.id;
+    this.id         = fullJson.id;
 
     // Internal state
     this.dirty      = false;
@@ -23,7 +23,7 @@ export class Scrypt extends EventTarget {
   }
 
   getJson() {
-    return { titlePage: this.titlePage, data: this.data, metaData: this.metaData }
+    return { id: this.id, titlePage: this.titlePage, data: this.data, metaData: this.metaData }
   }
 
   static async load(id) {
