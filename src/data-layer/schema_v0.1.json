@@ -5,6 +5,7 @@
   "type": "object",
   "required": ["titlePage", "data", "metaData"],
   "properties": {
+    "id": { "type": "integer", "minimum": 0 },
     "titlePage": {
       "type": "object",
       "required": ["title", "byline", "date"],

@@ -1,12 +1,13 @@
 // src/scrypt/scrypt.js
 import { saveScrypt, getScrypt} from "../data-layer/db.js";
+import {DEFAULT_OPTIONS} from "./default-options.js";
 
 /**
  * Scrypt: canonical screenplay object with autosave and change events.
  */
 export class Scrypt extends EventTarget {
   /**
-   * @param {{ meta: object, titlePage: object, data: object }} fullJson
+   * @param {{ id?: int, metaData: object, titlePage: object, data: object }} fullJson
    */
   constructor(fullJson) {
     super();
@@ -14,7 +15,7 @@ export class Scrypt extends EventTarget {
     this.metaData   = fullJson.metaData;
     this.titlePage  = fullJson.titlePage;
     this.data       = fullJson.data;     // { scenes: [...] }
-    this.id         = fullJson.metaData.id;
+    this.id         = fullJson.id;
 
     // Internal state
     this.dirty      = false;
@@ -23,7 +24,7 @@ export class Scrypt extends EventTarget {
   }
 
   getJson() {
-    return { titlePage: this.titlePage, data: this.data, metaData: this.metaData }
+    return { id: this.id, titlePage: this.titlePage, data: this.data, metaData: this.metaData }
   }
 
   static async load(id) {
@@ -70,4 +71,34 @@ export class Scrypt extends EventTarget {
     }
     return null;
   }
+
+  getOptions(field) {
+    const defaults = DEFAULT_OPTIONS[field] ?? [];
+
+    let used = [];
+    if (field === "location" || field === "indicator" || field === "time") {
+      used = [
+        ...new Set(this.data.scenes.map(sc =>
+          field === "location"   ? sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.location)
+          : field === "indicator"? sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.indicator)
+          :                       sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.time)
+        ).flat().filter(Boolean))
+      ];
+    } else if (field === "transition") {
+      used = [
+        ...new Set(this.data.scenes.map(sc =>
+          sc.elements.filter(e=>e.type==="transition").map(e=>e.text)
+        ).flat().filter(Boolean))
+      ];
+    } else if (field === "character") {
+      used = [
+        ...new Set(this.data.scenes.map(sc =>
+          sc.elements.filter(e=>e.type==="dialogue" && e.character).map(e=>e.character)
+        ).flat().filter(Boolean))
+      ];
+    }
+    // Merge & dedupe
+    return [...new Set([...defaults, ...used])];
+  }
+
 }

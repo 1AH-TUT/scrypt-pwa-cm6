@@ -1,4 +1,4 @@
-const CACHE = 'cm6-v1.005';
+const CACHE = 'cm6-v1.007';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -8,9 +8,14 @@ const ASSETS = [
   // Main App JS
   'src/main.js',
   'src/router.js',
+  'src/widget-host.js',
 
   // Components & Controllers
   'src/components/app-sidebar.js',
+  'src/components/edit-base.js',
+  'src/components/edit-transition.js',
+  'src/components/edit-scene-heading.js',
+  'src/components/edit-dialogue.js',
   'src/controllers/editor-controller.js',
 
   // Data Layer
@@ -26,6 +31,7 @@ const ASSETS = [
   // Scrypt logic
   'src/scrypt/element-utils.js',
   'src/scrypt/scrypt.js',
+  'src/scrypt/default-options.js',
 
   // State
   'src/state/current-scrypt.js',
@@ -33,6 +39,7 @@ const ASSETS = [
 
   // Views
   'src/views/editor-view.js',
+  'src/views/editor-view-themes.js',
 
   // Fonts
   'assets/fonts/CourierPrime.ttf',
