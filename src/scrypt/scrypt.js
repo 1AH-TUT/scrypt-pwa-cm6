@@ -1,5 +1,6 @@
 // src/scrypt/scrypt.js
 import { saveScrypt, getScrypt} from "../data-layer/db.js";
+import {DEFAULT_OPTIONS} from "./default-options.js";
 
 /**
  * Scrypt: canonical screenplay object with autosave and change events.
@@ -70,4 +71,30 @@ export class Scrypt extends EventTarget {
     }
     return null;
   }
+
+  getOptions(field) {
+    // 1. Get the static defaults
+    const defaults = DEFAULT_OPTIONS[field] ?? [];
+
+    // 2. Get all unique used values from the script (scenes/elements)
+    let used = [];
+    if (field === "location" || field === "indicator" || field === "time") {
+      used = [
+        ...new Set(this.data.scenes.map(sc =>
+          field === "location"   ? sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.location)
+          : field === "indicator"? sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.indicator)
+          :                       sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.time)
+        ).flat().filter(Boolean))
+      ];
+    } else if (field === "transition") {
+      used = [
+        ...new Set(this.data.scenes.map(sc =>
+          sc.elements.filter(e=>e.type==="transition").map(e=>e.text)
+        ).flat().filter(Boolean))
+      ];
+    }
+    // Merge & dedupe
+    return [...new Set([...defaults, ...used])];
+  }
+
 }

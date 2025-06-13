@@ -1,8 +1,11 @@
 import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import { EditorView, ViewPlugin, Decoration, keymap, WidgetType } from "@codemirror/view";
-
 import { oneDark } from "@codemirror/theme-one-dark";
+
 import '../components/edit-action.js';
+import '../components/edit-transition.js';
+import '../components/edit-scene-heading.js'
+
 
 /* Reusable extension builder */
 export const buildExtensions = controller => [
@@ -21,8 +24,35 @@ export const buildExtensions = controller => [
 ];
 
 
+/* Main CSS lives here */
+const myTheme = EditorView.baseTheme({
+  ".cm-content":    { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt", marginLeft: "1.3in", "marginRight": "1in" },
+  ".cm-scroller":   { lineHeight: "1.2" },
+  ".cm-line":       { padding: "0 2 0 0", borderLeft: "3px solid transparent" },
+  ".cm-fp-title":   { fontWeight: "bold", textTransform: "uppercase", textAlign: "center", marginTop: "1in", fontSize: "16pt" },
+  ".cm-right":      { textAlign: "right" },
+  ".cm-left":       { textAlign: "left" },
+  ".cm-center":     { textAlign: "center" },
+  ".cm-char":       { width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em", textTransform: "uppercase", fontWeight: "bold" },
+  ".cm-paren":      { width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em"},
+  ".cm-dialogue":   { width: "3.6in", margin: "0 auto" },
+  ".cm-transition": { textAlign: "right", textTransform: "uppercase" },
+  ".cm-heading":    { textAlign: "left", textTransform: "uppercase", fontWeight: "bolder" },
 
-// --- Editing Effects and Field ---
+  // ".cm-elt-selected":      { backgroundColor: "rgba(255, 255, 0, 0.1)" },
+  ".cm-line-break::after": { content: '""', display: "block", borderBottom: "1px solid #ccc", margin: "1em 0" },
+  ".cm-heading::before":   { content: "attr(data-scene)", position: "absolute", left: 0, width: "1in",
+                             textAlign: "right", fontWeight: "bold" },
+  /* Make each .cm-line fill the editor’s width when decorated */
+  ".cm-elt-selected": { backgroundColor: "rgba(255, 200, 0, 0.1)", borderLeft: "3px solid #ffa600" },
+  ".cm-elt-selected-dialogue":      { borderLeftColor: "#ffa600" }, /* gold */
+  ".cm-elt-selected-action":        { borderLeftColor: "#00bfff" }, /* sky blue */
+  ".cm-elt-selected-scene_heading": { borderLeftColor: "#32cd32" }, /* lime green */
+  ".cm-elt-selected-transition":    { borderLeftColor: "#ff69b4" }, /* hot pink */
+});
+
+
+/* Editing Widget stuff */
 export const beginEdit = StateEffect.define();   // value: { id }
 export const endEdit   = StateEffect.define();   // value: null
 
@@ -73,91 +103,81 @@ function makeEditDecorationField(controller) {
   });
 }
 
+// Host for edit widgets
 class LitBlockWidget extends WidgetType {
   constructor(controller, id){ super(); this.controller = controller; this.id = id; }
   eq(other){ return other.id === this.id; }
   toDOM(view){
     const node = document.createElement('div');
-    const el   = document.createElement('edit-action');
-    el.text    = this.controller.scrypt._findElementById(this.id).text;
-    node.appendChild(el);
+    const elObj = this.controller.scrypt._findElementById(this.id);
 
-    el.addEventListener('cancel', () => {
-     // 1) End the edit widget
-     view.dispatch({ effects: endEdit.of(null) });
+    let el;
+    if (elObj.type === 'transition') {
+      el = document.createElement('edit-transition');
+      el.value = elObj.text;
+      el.options = this.controller.scrypt.getOptions('transition');
+    } else if (elObj.type === 'action') {
+      el = document.createElement('edit-action');
+      el.value = elObj.text;
+    } else if (elObj.type === 'scene_heading') {
+      el = document.createElement('edit-scene-heading');
+      el.indicatorOptions = [...this.controller.scrypt.getOptions('indicator')];
+      el.locationOptions  = [...this.controller.scrypt.getOptions('location')];
+      el.timeOptions      = [...this.controller.scrypt.getOptions('time')];
+      el.indicator = elObj.indicator || '';
+      el.location  = elObj.location  || '';
+      el.time      = elObj.time      || '';
+      if (el.indicator && !el.indicatorOptions.includes(el.indicator))
+        el.indicatorOptions.unshift(el.indicator);
+      if (el.time && !el.timeOptions.includes(el.time))
+        el.timeOptions.unshift(el.time);
+    }
 
-     // 2) Restore the cursor onto the same element
-     const { start } = this.controller.elementPositions[this.id];
-     const pos = view.state.doc.line(start + 1).from;
-     view.dispatch({ selection: { anchor: pos } });
+    if (el){
+      node.appendChild(el);
 
-     // 3) Re-focus CM6
-     setTimeout(() => view.focus(), 0);
-    });
-
-    el.addEventListener('save', e => {
-      // 1. Persist JSON
-      this.controller.scrypt.updateElement(this.id, { text: e.detail.text });
-
-      // 2. Re-index controller & replace the whole doc
-      this.controller.reindex();
-      const newDoc = this.controller.text;
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: newDoc },
-        effects: [
-          endEdit.of(null),
-          StateEffect.reconfigure.of(buildExtensions(this.controller))
-        ]
+      el.addEventListener('cancel', () => {
+        view.dispatch({effects: endEdit.of(null)});
+        const {start} = this.controller.elementPositions[this.id];
+        const pos = view.state.doc.line(start + 1).from;
+        view.dispatch({selection: {anchor: pos}});
+        setTimeout(() => view.focus(), 0);
       });
 
-      // 3. Move cursor to the next element
-      const ids       = this.controller.elementOrder();
-      const idx       = ids.indexOf(this.id);
-      const nextId    = ids[(idx + 1) % ids.length];
-      const { start } = this.controller.elementPositions[nextId];
-      const pos       = view.state.doc.line(start + 1).from;
-      view.dispatch({ selection: { anchor: pos } });
+      el.addEventListener('save', e => {
+        this.controller.scrypt.updateElement(this.id, e.detail);
+        this.controller.reindex();
+        const newDoc = this.controller.text;
+        view.dispatch({
+          changes: {from: 0, to: view.state.doc.length, insert: newDoc},
+          effects: [
+            endEdit.of(null),
+            StateEffect.reconfigure.of(buildExtensions(this.controller))
+          ]
+        });
 
-      // 4. Refocus CM6
-      setTimeout(() => view.focus(), 0);
-    });
+        // Move to next element and refocus
+        const ids = this.controller.elementOrder();
+        const idx = ids.indexOf(this.id);
+        const nextId = ids[(idx + 1) % ids.length];
+        const {start} = this.controller.elementPositions[nextId];
+        const pos = view.state.doc.line(start + 1).from;
+        view.dispatch({selection: {anchor: pos}});
+        setTimeout(() => view.focus(), 0);
+      });
 
-    // swallow Esc / Tab so CM doesn't treat them as normal keys
-    // el.stopEvent = e => (e.key === 'Escape' || e.key === 'Tab');
+      el.stopEvent = e => (e.key === 'Escape' || e.key === 'Tab');
+    }
+
     return node;
   }
 }
+
 
 /*
   *** Extensions ***
 */
 
-/* CSS is here */
-const myTheme = EditorView.baseTheme({
-  ".cm-content":    { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt", marginLeft: "1.3in", "marginRight": "1in" },
-  ".cm-scroller":   { lineHeight: "1.2" },
-  ".cm-line":       { padding: "0 2 0 0", borderLeft: "3px solid transparent" },
-  ".cm-fp-title":   { fontWeight: "bold", textTransform: "uppercase", textAlign: "center", marginTop: "1in", fontSize: "16pt" },
-  ".cm-right":      { textAlign: "right" },
-  ".cm-left":       { textAlign: "left" },
-  ".cm-center":     { textAlign: "center" },
-  ".cm-char":       { width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em", textTransform: "uppercase", fontWeight: "bold" },
-  ".cm-paren":      { width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em"},
-  ".cm-dialogue":   { width: "3.6in", margin: "0 auto" },
-  ".cm-transition": { textAlign: "right", textTransform: "uppercase" },
-  ".cm-heading":    { textAlign: "left", textTransform: "uppercase", fontWeight: "bolder" },
-
-  // ".cm-elt-selected":      { backgroundColor: "rgba(255, 255, 0, 0.1)" },
-  ".cm-line-break::after": { content: '""', display: "block", borderBottom: "1px solid #ccc", margin: "1em 0" },
-  ".cm-heading::before":   { content: "attr(data-scene)", position: "absolute", left: 0, width: "1in",
-                             textAlign: "right", fontWeight: "bold" },
-  /* Make each .cm-line fill the editor’s width when decorated */
-  ".cm-elt-selected": { backgroundColor: "rgba(255, 200, 0, 0.1)", borderLeft: "3px solid #ffa600" },
-  ".cm-elt-selected-dialogue":      { borderLeftColor: "#ffa600" }, /* gold */
-  ".cm-elt-selected-action":        { borderLeftColor: "#00bfff" }, /* sky blue */
-  ".cm-elt-selected-scene_heading": { borderLeftColor: "#32cd32" }, /* lime green */
-  ".cm-elt-selected-transition":    { borderLeftColor: "#ff69b4" }, /* hot pink */
-});
 
 const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
 
@@ -216,7 +236,7 @@ function interceptEnter(controller){
     run(view){
       const ln   = view.state.doc.lineAt(view.state.selection.main.head).number-1;
       const meta = controller.lineMeta[ln];
-      if (meta?.type !== 'action') return false;
+      if (!['action', 'transition', 'scene_heading'].includes(meta?.type)) return false;
       view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
       return true;
     }
