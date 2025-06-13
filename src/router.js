@@ -9,7 +9,7 @@ const slot = document.getElementById("page-slot");
  * @param {number=} payload  // for editor, the script ID
  */
 export function mountPage(name) {
-  console.log("Mounting Page:", name);
+  console.debug("Mounting Page:", name);
   slot.innerHTML = "";
 
   let pageEl;
