@@ -1,4 +1,4 @@
-const CACHE = 'cm6-v1.006';
+const CACHE = 'cm6-v1.007';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -15,6 +15,7 @@ const ASSETS = [
   'src/components/edit-base.js',
   'src/components/edit-transition.js',
   'src/components/edit-scene-heading.js',
+  'src/components/edit-dialogue.js',
   'src/controllers/editor-controller.js',
 
   // Data Layer
@@ -38,6 +39,7 @@ const ASSETS = [
 
   // Views
   'src/views/editor-view.js',
+  'src/views/editor-view-themes.js',
 
   // Fonts
   'assets/fonts/CourierPrime.ttf',

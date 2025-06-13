@@ -1,58 +1,30 @@
+/**
+ * editor-view.js
+ *
+ * - Main CodeMirror 6 editor setup for screenplay PWA.
+ * - Integrates editing widgets, plugin glue, and theme.
+ * - Exports: editing state/effects, extensions builder, and createEditorView().
+ */
 import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import { EditorView, ViewPlugin, Decoration, keymap, WidgetType } from "@codemirror/view";
-import { oneDark } from "@codemirror/theme-one-dark";
 
 import '../components/edit-action.js';
 import '../components/edit-transition.js';
 import '../components/edit-scene-heading.js'
+import '../components/edit-dialogue.js';
+
+/*
+  CSS lives here
+  See also extension `screenplayLayout` (maps element types to decoration classes)
+  */
+import { myTheme } from './editor-view-themes.js';
+import { oneDark } from "@codemirror/theme-one-dark";
 
 
-/* Reusable extension builder */
-export const buildExtensions = controller => [
-  editingField,
-  makeEditDecorationField(controller),
-  interceptEnter(controller),
-  screenplayLayout(controller),
-  elementSelector(controller),
-  elementHighlighter(controller),
-  elementNavigator(controller),
-  EditorView.editable.of(false),
-  focusable,
-  EditorView.lineWrapping,
-  oneDark,
-  myTheme
-];
+/*
+  Editing Widget stuff
+  */
 
-
-/* Main CSS lives here */
-const myTheme = EditorView.baseTheme({
-  ".cm-content":    { fontFamily: "var(--font-screenplay, \"Courier Prime, monospace\")", fontSize: "12pt", marginLeft: "1.3in", "marginRight": "1in" },
-  ".cm-scroller":   { lineHeight: "1.2" },
-  ".cm-line":       { padding: "0 2 0 0", borderLeft: "3px solid transparent" },
-  ".cm-fp-title":   { fontWeight: "bold", textTransform: "uppercase", textAlign: "center", marginTop: "1in", fontSize: "16pt" },
-  ".cm-right":      { textAlign: "right" },
-  ".cm-left":       { textAlign: "left" },
-  ".cm-center":     { textAlign: "center" },
-  ".cm-char":       { width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em", textTransform: "uppercase", fontWeight: "bold" },
-  ".cm-paren":      { width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em"},
-  ".cm-dialogue":   { width: "3.6in", margin: "0 auto" },
-  ".cm-transition": { textAlign: "right", textTransform: "uppercase" },
-  ".cm-heading":    { textAlign: "left", textTransform: "uppercase", fontWeight: "bolder" },
-
-  // ".cm-elt-selected":      { backgroundColor: "rgba(255, 255, 0, 0.1)" },
-  ".cm-line-break::after": { content: '""', display: "block", borderBottom: "1px solid #ccc", margin: "1em 0" },
-  ".cm-heading::before":   { content: "attr(data-scene)", position: "absolute", left: 0, width: "1in",
-                             textAlign: "right", fontWeight: "bold" },
-  /* Make each .cm-line fill the editor’s width when decorated */
-  ".cm-elt-selected": { backgroundColor: "rgba(255, 200, 0, 0.1)", borderLeft: "3px solid #ffa600" },
-  ".cm-elt-selected-dialogue":      { borderLeftColor: "#ffa600" }, /* gold */
-  ".cm-elt-selected-action":        { borderLeftColor: "#00bfff" }, /* sky blue */
-  ".cm-elt-selected-scene_heading": { borderLeftColor: "#32cd32" }, /* lime green */
-  ".cm-elt-selected-transition":    { borderLeftColor: "#ff69b4" }, /* hot pink */
-});
-
-
-/* Editing Widget stuff */
 export const beginEdit = StateEffect.define();   // value: { id }
 export const endEdit   = StateEffect.define();   // value: null
 
@@ -115,22 +87,28 @@ class LitBlockWidget extends WidgetType {
     if (elObj.type === 'transition') {
       el = document.createElement('edit-transition');
       el.value = elObj.text;
-      el.options = this.controller.scrypt.getOptions('transition');
+      el.transitionOptions = this.controller.scrypt.getOptions('transition');
     } else if (elObj.type === 'action') {
       el = document.createElement('edit-action');
       el.value = elObj.text;
     } else if (elObj.type === 'scene_heading') {
       el = document.createElement('edit-scene-heading');
       el.indicatorOptions = [...this.controller.scrypt.getOptions('indicator')];
-      el.locationOptions  = [...this.controller.scrypt.getOptions('location')];
-      el.timeOptions      = [...this.controller.scrypt.getOptions('time')];
+      el.locationOptions = [...this.controller.scrypt.getOptions('location')];
+      el.timeOptions = [...this.controller.scrypt.getOptions('time')];
       el.indicator = elObj.indicator || '';
-      el.location  = elObj.location  || '';
-      el.time      = elObj.time      || '';
+      el.location = elObj.location || '';
+      el.time = elObj.time || '';
       if (el.indicator && !el.indicatorOptions.includes(el.indicator))
         el.indicatorOptions.unshift(el.indicator);
       if (el.time && !el.timeOptions.includes(el.time))
         el.timeOptions.unshift(el.time);
+    } else if (elObj.type === 'dialogue') {
+      el = document.createElement('edit-dialogue');
+      el.characterOptions = this.controller.scrypt.getOptions('character');
+      el.character     = elObj.character     || '';
+      el.parenthetical = elObj.parenthetical || '';
+      el.text          = elObj.text          || '';
     }
 
     if (el){
@@ -175,12 +153,10 @@ class LitBlockWidget extends WidgetType {
 
 
 /*
-  *** Extensions ***
-*/
+  CM6 Extensions
+  */
 
-
-const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
-
+// Layout (maps element types to decoration classes)
 function screenplayLayout(controller) {
   return ViewPlugin.fromClass(class {
     constructor(view) { this.decorations = this.build(view); }
@@ -236,12 +212,13 @@ function interceptEnter(controller){
     run(view){
       const ln   = view.state.doc.lineAt(view.state.selection.main.head).number-1;
       const meta = controller.lineMeta[ln];
-      if (!['action', 'transition', 'scene_heading'].includes(meta?.type)) return false;
+      if (!['action', 'transition', 'scene_heading', 'dialogue'].includes(meta?.type)) return false;
       view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
       return true;
     }
   }]);
 }
+
 function elementNavigator(controller) {
   // Helper: move selection to the first line of element `targetId`
   const gotoElement = (view, targetId) => {
@@ -350,10 +327,28 @@ function elementHighlighter(controller) {
   });
 }
 
+const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
+
+/* Reusable extension builder */
+export const buildExtensions = controller => [
+  editingField,
+  makeEditDecorationField(controller),
+  interceptEnter(controller),
+  screenplayLayout(controller),
+  elementSelector(controller),
+  elementHighlighter(controller),
+  elementNavigator(controller),
+  EditorView.editable.of(false),
+  focusable,
+  EditorView.lineWrapping,
+  oneDark,
+  myTheme
+];
+
 
 /*
-  *** Create the View ***
-*/
+  Create the View
+  */
 
 export function createEditorView({ parent, controller }) {
   if (!controller) throw new Error("createEditorView: controller missing");

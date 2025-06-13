@@ -1,6 +1,16 @@
 import { html, css } from 'lit';
 import { EditBase }   from './edit-base.js';
 
+/**
+ * @component
+ * EditTransition — dropdown widget for editing 'transition' lines.
+ *
+ * @extends EditBase
+ * @property {string} value - Current transition text/value.
+ * @property {string[]} transitionOptions - Array of transition options.
+ * @fires save   - CustomEvent<{ text: string }>, on save (always uppercased).
+ * @fires cancel - Event, on cancel.
+ */
 export class EditTransition extends EditBase {
   static styles = [
     EditBase.styles,
@@ -13,7 +23,7 @@ export class EditTransition extends EditBase {
 
   static properties = {
     ...EditBase.properties,
-    options: { type: Array }
+    transitionOptions: { type: Array }
   };
 
   _renderControl() {
@@ -25,13 +35,13 @@ export class EditTransition extends EditBase {
           aria-label="Transition type"
           @keydown=${this._onKeydown}
         >
-          ${this.options.map(o => opt(o, o === this.value))}
+          ${this.transitionOptions.map(o => opt(o, o === this.value))}
         </select>
       </div>`;
   }
 
   _getPatch() {
-    const text = this.shadowRoot.querySelector('select')?.value ?? '';
+    const text = this.shadowRoot.querySelector('select')?.value.toUpperCase() ?? '';
     return { text };
   }
 }

@@ -2,6 +2,18 @@
 import { html, css }  from 'lit';
 import { EditBase }   from './edit-base.js';
 
+/**
+ * @component
+ * EditSceneHeading — widget for scene headings (horizontal stacked).
+ *
+ * @extends EditBase
+ * @property {object} value - Current scene heading, shape: { indicator, location, time }
+ * @property {string[]} indicatorOptions - INT./EXT. options.
+ * @property {string[]} locationOptions  - List of known locations.
+ * @property {string[]} timeOptions      - List of possible times.
+ * @fires save   - CustomEvent<{ indicator, location, time, text: string }>, on save (all UPPERCASE).
+ * @fires cancel - Event, on cancel.
+ */
 export class EditSceneHeading extends EditBase {
   static styles = [
     EditBase.styles,

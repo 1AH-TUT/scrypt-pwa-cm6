@@ -16,6 +16,10 @@ export function explodeElement(el) {
       });
       break;
     default:
+      if (! el.text) {
+        console.debug('No text in element', el)
+      }
+
       el.text.split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
         meta .push({id, type: el.type, field:"text", idx:i});

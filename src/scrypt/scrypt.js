@@ -73,10 +73,8 @@ export class Scrypt extends EventTarget {
   }
 
   getOptions(field) {
-    // 1. Get the static defaults
     const defaults = DEFAULT_OPTIONS[field] ?? [];
 
-    // 2. Get all unique used values from the script (scenes/elements)
     let used = [];
     if (field === "location" || field === "indicator" || field === "time") {
       used = [
@@ -90,6 +88,12 @@ export class Scrypt extends EventTarget {
       used = [
         ...new Set(this.data.scenes.map(sc =>
           sc.elements.filter(e=>e.type==="transition").map(e=>e.text)
+        ).flat().filter(Boolean))
+      ];
+    } else if (field === "character") {
+      used = [
+        ...new Set(this.data.scenes.map(sc =>
+          sc.elements.filter(e=>e.type==="dialogue" && e.character).map(e=>e.character)
         ).flat().filter(Boolean))
       ];
     }

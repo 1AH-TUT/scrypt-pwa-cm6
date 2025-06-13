@@ -1,10 +1,15 @@
 import { LitElement, html, css } from 'lit';
 
 /**
- * Base class for all in-place edit widgets.
- * ------------------------------------------------------------------
- * • Subclasses override `_renderControl()` and usually `_getPatch()`.
- * • `_getPatch()` returns the patch object (or `null` to cancel save).
+ * @component
+ * Base class for all in-place edit widgets (LitElement).
+ *
+ * @abstract
+ * @property {string|object} value - Current value to edit.
+ * @method _renderControl - Must be implemented by subclasses to provide widget DOM.
+ * @method _getPatch - Optionally override to provide patch object for 'save' event.
+ * @fires save   - CustomEvent with detail: patch object, on successful save.
+ * @fires cancel - Event on cancel.
  */
 export class EditBase extends LitElement {
   static properties = { value: { type: String } };
