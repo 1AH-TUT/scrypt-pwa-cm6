@@ -135,10 +135,17 @@ class LitBlockWidget extends WidgetType {
         });
 
         // Move to next element and refocus
-        const ids = this.controller.elementOrder();
-        const idx = ids.indexOf(this.id);
-        const nextId = ids[(idx + 1) % ids.length];
-        const {start} = this.controller.elementPositions[nextId];
+        // const ids = this.controller.elementOrder();
+        // const idx = ids.indexOf(this.id);
+        // const nextId = ids[(idx + 1) % ids.length];
+        // const {start} = this.controller.elementPositions[nextId];
+        // const pos = view.state.doc.line(start + 1).from;
+        // view.dispatch({selection: {anchor: pos}});
+        // setTimeout(() => view.focus(), 0);
+
+        // Restore selection to the current element's start after save
+        this.controller.reindex();
+        const {start} = this.controller.elementPositions[this.id];
         const pos = view.state.doc.line(start + 1).from;
         view.dispatch({selection: {anchor: pos}});
         setTimeout(() => view.focus(), 0);

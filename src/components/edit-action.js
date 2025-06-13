@@ -29,7 +29,7 @@ export class EditAction extends EditBase {
   /* Patch object */
   _getPatch() {
     const text = this.shadowRoot.querySelector('textarea')?.value ?? '';
-    return { text };
+    return { text: text.trim() };
   }
 }
 customElements.define('edit-action', EditAction);
