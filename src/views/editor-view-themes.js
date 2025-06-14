@@ -35,8 +35,6 @@ export const myTheme = EditorView.baseTheme({
   ".cm-insert-bar button":       { flex: "1 1 0", minWidth: 0, padding: ".5rem 1rem", background: "inherit", color: "inherit",
                                    border: "1px solid #ccc", borderRadius: "0.25em", cursor: "pointer", font: "inherit",
                                    transition: "background 0.2s, color 0.2s" },
-  // ".cm-insert-bar button:focus": { outline: "2px solid var(--accent, #ffa600)", zIndex: 1 },
-  // ".cm-insert-bar button:hover": { background: "var(--accent, #fffbe6)", color: "#000" },
   ".cm-insert-bar button:focus, .cm-insert-bar button:hover": { background: "var(--accent, #fffbe6)", color: "#000" },
   ".cm-insert-btn-action:focus, .cm-insert-btn-action:hover": { outline: "2px solid #00bfff", borderColor: "#00bfff" },
   ".cm-insert-btn-dialogue:focus, .cm-insert-btn-dialogue:hover": { outline: "2px solid #ffa600", borderColor: "#ffa600" },

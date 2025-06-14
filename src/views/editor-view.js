@@ -190,7 +190,7 @@ function screenplayLayout(controller) {
           b.add(from, from,
             Decoration.line({
               class: "cm-heading",
-              attributes: { "data-scene": String(meta.SceneNo ?? "") }
+              attributes: { "data-scene": String(meta.sceneNo ?? "") }
             })
           );
         } else {
@@ -336,10 +336,8 @@ export const cancelInsert = StateEffect.define();
 
 function insertPlaceholderField(controller) {
   return StateField.define({
-    // 1. Initial state (no placeholder)
     create() { return Decoration.none; },
 
-    // 2. How the field updates on every transaction
     update(decos, tr) {
       // Keep current decorations in sync with document edits
       if (tr.docChanged) decos = decos.map(tr.changes);
@@ -351,9 +349,11 @@ function insertPlaceholderField(controller) {
 
         // Add the placeholder if beginInsert effect seen
         if (ef.is(beginInsert)) {
+          const pos = ef.value.pos;
+          const lineNo = tr.newDoc.lineAt(pos).number - 2;
           const deco = Decoration.widget({
             side: 1, // after the position
-            widget: new PlaceholderWidget(controller, ef.value.pos)
+            widget: new PlaceholderWidget(controller, lineNo)
           }).range(ef.value.pos);
           return Decoration.set([deco]);
         }
@@ -362,16 +362,15 @@ function insertPlaceholderField(controller) {
       return decos;
     },
 
-    // 3. Tell CodeMirror: this field provides decorations
     provide: f => EditorView.decorations.from(f)
   });
 }
 
 class PlaceholderWidget extends WidgetType {
-  constructor(controller, pos, { persistent = false } = {}) {
+  constructor(controller, lineNo, { persistent = false } = {}) {
     super();
     this.controller = controller;
-    this.pos = pos;
+    this.lineNo = lineNo;
     this.persistent = persistent;
   }
   toDOM() {
@@ -380,7 +379,7 @@ class PlaceholderWidget extends WidgetType {
     wrap.setAttribute('role', 'toolbar');
     wrap.setAttribute('aria-label', 'Insert element');
     wrap.setAttribute('aria-keyshortcuts', 'Alt+N, Alt+Shift+N');
-    wrap.tabIndex = -1;  // focusable programmatically, skipped in Tab order
+    wrap.tabIndex = -1;  // focusable but skipped in Tab order
 
     if (!this.persistent) {
       // If the bar loses focus, cancel
@@ -452,7 +451,7 @@ class PlaceholderWidget extends WidgetType {
     });
 
     if (!this.persistent) {
-      // first let CodeMirror finish its internal focus dance, then grab focus for the button.
+      // first let CodeMirror finish its internal focus dance, then grab focus for the first button.
       setTimeout(() => {
        setTimeout(() => wrap.querySelector('button')?.focus(), 0);
       }, 0);
@@ -461,10 +460,10 @@ class PlaceholderWidget extends WidgetType {
     return wrap;
   }
   insertElement(type, wrap) {
-    console.log("inserting element of ", type)
-    if (!this.persistent) wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
-      const { pos } = this;
-      this.controller.createElementAtPos(pos, type, "after");
+    wrap.dispatchEvent(new CustomEvent("cm-request-insert", {
+      bubbles: true,
+      detail: {type, lineNo: this.lineNo, beforeAfter: "after"}
+    }));
   }
 }
 
@@ -479,9 +478,6 @@ function persistentInsertBar(controller) {
       }
     }
     build(view) {
-      // If already in edit/insert mode, do NOT show persistent bar
-      // (optional: add your own check if needed)
-
       // Find the position for the persistent placeholder:
       let pos;
       if (view.state.doc.length === 0) {
@@ -490,9 +486,10 @@ function persistentInsertBar(controller) {
         // After the last line
         pos = view.state.doc.length;
       }
+      let lineNo = view.state.doc.lineAt(pos).number - 2;
       const deco = Decoration.widget({
         side: 1,
-        widget: new PlaceholderWidget(controller, pos, { persistent: true }),
+        widget: new PlaceholderWidget(controller, lineNo, { persistent: true }),
       }).range(pos);
       return Decoration.set([deco]);
     }
@@ -561,7 +558,7 @@ function elementHighlighter(controller) {
 
 const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
 
-/* Reusable extension builder */
+/* DRY extension builder */
 export const buildExtensions = controller => [
   editingField,
   makeEditDecorationField(controller),
@@ -600,6 +597,30 @@ export function createEditorView({ parent, controller }) {
   view.dom.addEventListener('cm-cancel-insert', () => {
     view.dispatch({ effects: cancelInsert.of(null) });
     setTimeout(() => view.focus(), 0);
+  });
+
+  view.dom.addEventListener("cm-request-insert", e => {
+    const { type, lineNo, beforeAfter } = e.detail;
+
+    // 1. mutate screenplay
+    const newId = controller.createElementAtLine(lineNo, type, beforeAfter);
+
+    // 2 · rebuild document + drop placeholder
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: controller.text },
+      effects: [
+        StateEffect.reconfigure.of(buildExtensions(controller)),
+        cancelInsert.of(null)          // same txn – no flicker
+      ]
+    });
+
+    // 3 · place caret at first line of the fresh element
+    if (newId) {
+      const { start } = controller.elementPositions[newId];
+      view.dispatch({ selection: { anchor: view.state.doc.line(start + 1).from } });
+    }
+
+    view.focus();
   });
 
   return view

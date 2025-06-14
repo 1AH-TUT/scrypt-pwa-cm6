@@ -37,7 +37,7 @@ export function toLinesAndMap(json) {
 
   // Add script meta
   blank();
-  ['title', 'byline', 'source', 'address', 'copyright', 'date'].forEach(k => {
+  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(k => {
     if (k in json["titlePage"]) {
       lines.push(`${json["titlePage"][k]}`);
       lineMap.push({ "type":`${k}`});
@@ -47,9 +47,10 @@ export function toLinesAndMap(json) {
   newPage();
 
   json.data.scenes.forEach((sc, sceneIdx) => {
-    sc.elements.forEach(el => {
+    sc.elements.forEach((el, elIdx) => {
       const { lines: elLines, meta: elLineMap } = explodeElement(el)
-      elLineMap[0]['SceneNo'] = sceneIdx
+      elLineMap[0]['sceneNo'] = sceneIdx
+      elLineMap[0]['elementNo'] = elIdx
       lines.push(...elLines);
       lineMap.push(...elLineMap)
 

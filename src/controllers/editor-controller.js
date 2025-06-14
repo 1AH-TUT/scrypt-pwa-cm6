@@ -38,7 +38,7 @@ export class EditorController {
     return ids;
   }
 
-    /** Rebuild lines + maps after a JSON mutation */
+  /** Rebuild lines + maps after a JSON mutation */
   reindex() {
     const { lines, lineMap } = toLinesAndMap(this.scrypt);
     this.lines   = lines;
@@ -53,24 +53,40 @@ export class EditorController {
     });
   }
 
-  createElementAtPos(pos, type, beforeAfter = 'after', initialData = {}) {
-    // Map doc pos to element index
-    const { elementIndex, isEdgeCase } = this.findElementIndexFromDocPos(pos, beforeAfter);
 
-    // Insert using the Script data model
-    const newId = this.scrypt.addElement(type, elementIndex, {});
+  createElementAtLine(lineNo, type, beforeAfter = 'after', initialData = {}) {
+    console.debug(`createElementAtPos called, lineNo: ${lineNo}, type: ${type}, beforeAfter: ${beforeAfter}`)
 
-    // Reindex and return new element's id (for view to focus, etc)
-    this.reindex();
-    return newId;
+    const  { sceneNo, elementNo } = this.findElementIndexesFromLineNo(lineNo, beforeAfter);
+
+    if ( sceneNo == null || elementNo == null ) return;
+
+    const id = this.scrypt.addElement(type, sceneNo, elementNo, beforeAfter)
+    if (id !== null) {
+      this.reindex();
+      return id;
+    }
+    return null;
   }
 
-  // Helper: figure out where to insert
-  findElementIndexFromDocPos(pos, beforeAfter = 'after') {
-    // Walk through elementPositions, figure out which element this pos is before/after
-    // Return an index (in elements array) for insert, and edge case flags if needed
-    // e.g. at start, end, etc.
-    // ...
-    return { elementIndex, isEdgeCase };
+  /**
+   * Finds the element index (in the Script elements array) for insertion
+   * based on a given document line number and direction.
+   *
+   * @param { number } lineNo - zero-based line number
+   * @param { 'before'|'after' } beforeAfter - insertion direction
+   * @returns { object } - containing SceneNo & ElementNo
+   */
+  findElementIndexesFromLineNo(lineNo, beforeAfter = 'after') {
+    // Map lineMeta to first line of each element
+    const meta = this.lineMeta[lineNo];
+    if (!meta || meta.id == null) {
+      console.error(`findElementIndexFromLineNo: no element found at lineNo: ${lineNo}`);
+      return { sceneNo: null, elementNo: null};
+    } else {
+      // We're "in" an element
+      const { sceneNo, elementNo } = meta;
+      return { sceneNo, elementNo }
+    }
   }
 }

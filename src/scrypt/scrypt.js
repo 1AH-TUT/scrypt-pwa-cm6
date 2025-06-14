@@ -101,10 +101,24 @@ export class Scrypt extends EventTarget {
     return [...new Set([...defaults, ...used])];
   }
 
-  addElement(type, index, initialData = {}) {
-    console.debug(`Scrypt.addElement type: ${type}, index: ${index}`)
-    // Create new element with a unique ID
-    // Insert at elements[index] (splice)
-    // Return new ID
+  addElement(type, sceneIndex, elementIndex, beforeAfter) {
+    const newEl = { type, id: `se${this.metaData.nextId}`, text: '' };
+    this.metaData.nextId += 1;
+    const pos = beforeAfter === 'before' ? elementIndex : elementIndex + 1;
+
+    if (type === 'transition') {
+      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
+    } else if (type === 'action') {
+      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
+      this.data.scenes[sceneIndex].elements.splice(pos, 0, newEl)
+      this._markDirty();
+      return newEl.id;
+    } else if (type === 'dialogue') {
+      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
+    } else if (type === 'scene_heading') {
+      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
+    }
+
+    return null;
   }
 }
