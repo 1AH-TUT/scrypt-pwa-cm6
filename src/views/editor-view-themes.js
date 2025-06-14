@@ -29,4 +29,17 @@ export const myTheme = EditorView.baseTheme({
   ".cm-elt-selected-action":        { borderLeftColor: "#00bfff" }, /* sky blue */
   ".cm-elt-selected-scene_heading": { borderLeftColor: "#32cd32" }, /* lime green */
   ".cm-elt-selected-transition":    { borderLeftColor: "#ff69b4" }, /* hot pink */
+  ".cm-insert-bar":              { display: "flex", gap: ".5rem", justifyContent: "center", alignItems: "stretch", width: "100%",
+                                   margin: ".5rem 0", padding: ".25rem", background: "inherit", color: "inherit",
+                                   fontSize: "smaller", boxSizing: "border-box" },
+  ".cm-insert-bar button":       { flex: "1 1 0", minWidth: 0, padding: ".5rem 1rem", background: "inherit", color: "inherit",
+                                   border: "1px solid #ccc", borderRadius: "0.25em", cursor: "pointer", font: "inherit",
+                                   transition: "background 0.2s, color 0.2s" },
+  // ".cm-insert-bar button:focus": { outline: "2px solid var(--accent, #ffa600)", zIndex: 1 },
+  // ".cm-insert-bar button:hover": { background: "var(--accent, #fffbe6)", color: "#000" },
+  ".cm-insert-bar button:focus, .cm-insert-bar button:hover": { background: "var(--accent, #fffbe6)", color: "#000" },
+  ".cm-insert-btn-action:focus, .cm-insert-btn-action:hover": { outline: "2px solid #00bfff", borderColor: "#00bfff" },
+  ".cm-insert-btn-dialogue:focus, .cm-insert-btn-dialogue:hover": { outline: "2px solid #ffa600", borderColor: "#ffa600" },
+  ".cm-insert-btn-scene_heading:focus, .cm-insert-btn-scene_heading:hover": { outline: "2px solid #32cd32", borderColor: "#32cd32" },
+  ".cm-insert-btn-transition:focus, .cm-insert-btn-transition:hover": { outline: "2px solid #ff69b4", borderColor: "#ff69b4" },
 });

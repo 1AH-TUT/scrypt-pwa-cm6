@@ -134,15 +134,6 @@ class LitBlockWidget extends WidgetType {
           ]
         });
 
-        // Move to next element and refocus
-        // const ids = this.controller.elementOrder();
-        // const idx = ids.indexOf(this.id);
-        // const nextId = ids[(idx + 1) % ids.length];
-        // const {start} = this.controller.elementPositions[nextId];
-        // const pos = view.state.doc.line(start + 1).from;
-        // view.dispatch({selection: {anchor: pos}});
-        // setTimeout(() => view.focus(), 0);
-
         // Restore selection to the current element's start after save
         this.controller.reindex();
         const {start} = this.controller.elementPositions[this.id];
@@ -150,8 +141,6 @@ class LitBlockWidget extends WidgetType {
         view.dispatch({selection: {anchor: pos}});
         setTimeout(() => view.focus(), 0);
       });
-
-      el.stopEvent = e => (e.key === 'Escape' || e.key === 'Tab');
     }
 
     return node;
@@ -229,6 +218,13 @@ function interceptEnter(controller){
 function elementNavigator(controller) {
   // Helper: move selection to the first line of element `targetId`
   const gotoElement = (view, targetId) => {
+    if (targetId === "_insert_bar_") {
+      // Find the persistent insert bar and focus it
+      const bar = view.dom.querySelector('.cm-insert-bar');
+      bar?.querySelector("button")?.focus();
+      return;
+    }
+
     const { start, end } = controller.elementPositions[targetId];
     const doc = view.state.doc;
 
@@ -256,7 +252,6 @@ function elementNavigator(controller) {
 
   const move = dir => view => {
     const ids = controller.elementOrder();
-    if (!ids.length) return false;
 
     // What’s the element under the current selection head?
     let curId = controller.selectedId;
@@ -271,11 +266,241 @@ function elementNavigator(controller) {
     return true;
   };
 
+  const insertPlaceholder = loc => view => {
+    console.debug("insertPlaceholder :", loc)
+
+    const ids = controller.elementOrder();
+    if (!ids.length) return false;
+
+    let curId = controller.selectedId;
+    if (curId == null) {
+      console.debug("insertPlaceholder:  no element selected")
+      return false
+    }
+    console.debug("insertPlaceholder curId=", curId)
+
+    const posInfo = controller.elementPositions[curId];
+    if (!posInfo) {
+      console.debug("insertPlaceholder: no posInfo")
+      return false;
+    }
+    console.debug("insertPlaceholder: posInfo:", posInfo)
+
+    const doc = view.state.doc;
+    let pos;
+    if (loc === "below") {
+      // Insert after this element's last line and trailing blank line
+      pos = doc.line(posInfo.end + 2).from;
+    } else {
+      // Insert before this element's first line
+      pos = doc.line(posInfo.start).from;
+    }
+    console.debug("insertPlaceholder: pos:", pos)
+
+    // Now dispatch the effect to trigger insertPlaceholderField
+    view.dispatch({ effects: beginInsert.of({ pos }) });
+
+    // focus the editor
+    setTimeout(() => view.focus(), 0);
+
+    return true;
+  }
+
+  const inInsertBar = () => !!document.activeElement?.closest(".cm-insert-bar");
+
   return keymap.of([
-    { key: "Tab",       run: move("next")  },
-    { key: "Shift-Tab", run: move("prev")  },
+    {
+      key: "Tab",
+      run: view => {
+        if (inInsertBar()) return false;          // let browser handle it
+        return move("next")(view);                // our own navigation
+      }
+    },
+    {
+      key: "Shift-Tab",
+      run: view => {
+          if (inInsertBar()) return false;          // browser handles reverse-tab
+        return move("prev")(view);
+      }
+    },
+    { key: "Alt-n", run: insertPlaceholder("below")  },
+    { key: "Alt-Shift-n", run: insertPlaceholder("above")  },
   ]);
 }
+
+/* begin insertPlaceholder stuff - to be moved later */
+
+export const beginInsert = StateEffect.define();
+
+export const cancelInsert = StateEffect.define();
+
+function insertPlaceholderField(controller) {
+  return StateField.define({
+    // 1. Initial state (no placeholder)
+    create() { return Decoration.none; },
+
+    // 2. How the field updates on every transaction
+    update(decos, tr) {
+      // Keep current decorations in sync with document edits
+      if (tr.docChanged) decos = decos.map(tr.changes);
+
+      // Loop over all effects in this transaction
+      for (let ef of tr.effects) {
+        // Remove the placeholder if cancel effect seen
+        if (ef.is(cancelInsert)) return Decoration.none;
+
+        // Add the placeholder if beginInsert effect seen
+        if (ef.is(beginInsert)) {
+          const deco = Decoration.widget({
+            side: 1, // after the position
+            widget: new PlaceholderWidget(controller, ef.value.pos)
+          }).range(ef.value.pos);
+          return Decoration.set([deco]);
+        }
+      }
+      // Otherwise, no change
+      return decos;
+    },
+
+    // 3. Tell CodeMirror: this field provides decorations
+    provide: f => EditorView.decorations.from(f)
+  });
+}
+
+class PlaceholderWidget extends WidgetType {
+  constructor(controller, pos, { persistent = false } = {}) {
+    super();
+    this.controller = controller;
+    this.pos = pos;
+    this.persistent = persistent;
+  }
+  toDOM() {
+    const wrap = document.createElement('div');
+    wrap.className = 'cm-insert-bar';
+    wrap.setAttribute('role', 'toolbar');
+    wrap.setAttribute('aria-label', 'Insert element');
+    wrap.setAttribute('aria-keyshortcuts', 'Alt+N, Alt+Shift+N');
+    wrap.tabIndex = -1;  // focusable programmatically, skipped in Tab order
+
+    if (!this.persistent) {
+      // If the bar loses focus, cancel
+      wrap.addEventListener('blur', (e) => {
+        setTimeout(() => {
+          // If no button inside has focus
+          if (!wrap.contains(document.activeElement)) {
+            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+          }
+        }, 0);
+      }, true); // useCapture: true so it fires as soon as any child blurs
+    }
+
+    const types = [
+      { label: 'Action',     type: 'action' },
+      { label: 'Dialogue',   type: 'dialogue' },
+      { label: 'Scene',      type: 'scene_heading' },
+      { label: 'Transition', type: 'transition' }
+    ];
+    // Add the buttons
+    types.forEach(info => {
+      const btn = document.createElement('button');
+      btn.textContent = info.label;
+      btn.setAttribute('aria-label', `Insert ${info.label}`);
+      btn.classList.add(`cm-insert-btn-${info.type}`);
+      btn.onclick = () => this.insertElement(info.type, wrap);
+      wrap.appendChild(btn);
+    });
+
+    wrap.addEventListener('keydown', e => {
+      const btns = Array.from(wrap.querySelectorAll('button'));
+      const idx  = btns.indexOf(document.activeElement);
+
+      // Arrow keys cycle buttons
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const step = e.key === 'ArrowRight' ? 1 : -1;
+        const next = btns[(idx + step + btns.length) % btns.length];
+        next.focus();
+        return;
+      }
+
+      if (this.persistent) return;
+
+      // Tab / Shift+Tab at ends cancels, otherwise moves between buttons
+      if (e.key === 'Tab') {
+        e.preventDefault();
+
+        if (e.shiftKey) {
+          if (idx === 0) {
+            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+          } else {
+            btns[idx - 1].focus();
+          }
+        } else {
+          if (idx === btns.length - 1) {
+            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+          } else {
+            btns[idx + 1].focus();
+          }
+        }
+        return;
+      }
+
+      // Escape cancels
+      if (e.key === 'Escape') {
+        wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+      }
+    });
+
+    if (!this.persistent) {
+      // first let CodeMirror finish its internal focus dance, then grab focus for the button.
+      setTimeout(() => {
+       setTimeout(() => wrap.querySelector('button')?.focus(), 0);
+      }, 0);
+    }
+
+    return wrap;
+  }
+  insertElement(type, wrap) {
+    console.log("inserting element of ", type)
+    if (!this.persistent) wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+      const { pos } = this;
+      this.controller.createElementAtPos(pos, type, "after");
+  }
+}
+
+function persistentInsertBar(controller) {
+  return ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = this.build(view);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.build(update.view);
+      }
+    }
+    build(view) {
+      // If already in edit/insert mode, do NOT show persistent bar
+      // (optional: add your own check if needed)
+
+      // Find the position for the persistent placeholder:
+      let pos;
+      if (view.state.doc.length === 0) {
+        pos = 0;
+      } else {
+        // After the last line
+        pos = view.state.doc.length;
+      }
+      const deco = Decoration.widget({
+        side: 1,
+        widget: new PlaceholderWidget(controller, pos, { persistent: true }),
+      }).range(pos);
+      return Decoration.set([deco]);
+    }
+  }, {
+    decorations: v => v.decorations
+  });
+}
+/* end insertPlaceholder stuff - to be moved later */
 
 function elementSelector(controller) {
   return ViewPlugin.fromClass(
@@ -345,6 +570,8 @@ export const buildExtensions = controller => [
   elementSelector(controller),
   elementHighlighter(controller),
   elementNavigator(controller),
+  insertPlaceholderField(controller),
+  persistentInsertBar(controller),
   EditorView.editable.of(false),
   focusable,
   EditorView.lineWrapping,
@@ -369,5 +596,11 @@ export function createEditorView({ parent, controller }) {
   // Make the outer editor node focusable & grab focus
   view.dom.tabIndex = 0;
   view.focus();
+
+  view.dom.addEventListener('cm-cancel-insert', () => {
+    view.dispatch({ effects: cancelInsert.of(null) });
+    setTimeout(() => view.focus(), 0);
+  });
+
   return view
 }

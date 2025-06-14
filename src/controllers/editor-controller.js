@@ -31,11 +31,11 @@ export class EditorController {
 
   /** Unique element IDs in document order */
   elementOrder() {
-    return [...new Set(
-      this.lineMeta
-          .filter(m => m && m.id != null)
-          .map(m => m.id)
-    )];
+    const ids = [...new Set(this.lineMeta
+        .filter(m => m && m.id != null)
+        .map(m => m.id))];
+    ids.push("_insert_bar_");      // NEW
+    return ids;
   }
 
     /** Rebuild lines + maps after a JSON mutation */
@@ -53,4 +53,24 @@ export class EditorController {
     });
   }
 
+  createElementAtPos(pos, type, beforeAfter = 'after', initialData = {}) {
+    // Map doc pos to element index
+    const { elementIndex, isEdgeCase } = this.findElementIndexFromDocPos(pos, beforeAfter);
+
+    // Insert using the Script data model
+    const newId = this.scrypt.addElement(type, elementIndex, {});
+
+    // Reindex and return new element's id (for view to focus, etc)
+    this.reindex();
+    return newId;
+  }
+
+  // Helper: figure out where to insert
+  findElementIndexFromDocPos(pos, beforeAfter = 'after') {
+    // Walk through elementPositions, figure out which element this pos is before/after
+    // Return an index (in elements array) for insert, and edge case flags if needed
+    // e.g. at start, end, etc.
+    // ...
+    return { elementIndex, isEdgeCase };
+  }
 }

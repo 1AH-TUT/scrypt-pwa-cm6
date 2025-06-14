@@ -101,4 +101,10 @@ export class Scrypt extends EventTarget {
     return [...new Set([...defaults, ...used])];
   }
 
+  addElement(type, index, initialData = {}) {
+    console.debug(`Scrypt.addElement type: ${type}, index: ${index}`)
+    // Create new element with a unique ID
+    // Insert at elements[index] (splice)
+    // Return new ID
+  }
 }
