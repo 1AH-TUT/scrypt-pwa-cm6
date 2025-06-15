@@ -147,12 +147,12 @@ class LitBlockWidget extends WidgetType {
       });
 
       el.addEventListener('save', e => {
-        /* Update data model ------------------------------------- */
+        // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
         this.controller.reindex();
         const newDoc = this.controller.text;
 
-        /* Dispatch 1 : replace the document, close the widget -- */
+        // Replace the document, close the widget
         view.dispatch({
           changes : { from: 0, to: view.state.doc.length, insert: newDoc },
           effects : [
@@ -161,19 +161,16 @@ class LitBlockWidget extends WidgetType {
           ]
         });
 
-        /* Wait one micro-task for CM’s line table to refresh ----- */
+        // Wait one micro-task for CM’s line table to refresh
         queueMicrotask(() => {
-          this.controller.reindex();                     // now matches CM’s doc
+          this.controller.reindex();
           const { start } = this.controller.elementPositions[this.id];
           const anchor    = view.state.doc.line(start + 1).from;
-
-          /* Dispatch #2 : move caret & scroll ------------------- */
           view.dispatch({
             selection:      { anchor },
             scrollIntoView: true
           });
-
-          view.focus();                                  // focus back to editor
+          view.focus();
         });
       });
     }
@@ -332,8 +329,8 @@ function elementNavigator(controller) {
     }
     console.debug("insertPlaceholder: pos:", pos)
 
-    // Now dispatch the effect to trigger insertPlaceholderField
-    view.dispatch({ effects: beginInsert.of({ pos }) });
+    // Dispatch the effect to trigger insertPlaceholderField
+    view.dispatch({ effects: beginInsert.of({ pos, id: curId, beforeAfter: loc === "below" ? "after" : "before" }) });
 
     // focus the editor
     setTimeout(() => view.focus(), 0);
@@ -382,14 +379,13 @@ function insertPlaceholderField(controller) {
         // Remove the placeholder if cancel effect seen
         if (ef.is(cancelInsert)) return Decoration.none;
 
-        // Add the placeholder if beginInsert effect seen
+        // If beginInsert, insert placeholde with the element id
         if (ef.is(beginInsert)) {
-          const pos = ef.value.pos;
-          const lineNo = tr.newDoc.lineAt(pos).number - 2;
+          const { pos, id, beforeAfter } = ef.value;
           const deco = Decoration.widget({
-            side: 1, // after the position
-            widget: new PlaceholderWidget(controller, lineNo)
-          }).range(ef.value.pos);
+            side: 1,
+            widget: new PlaceholderWidget(controller, id, beforeAfter)
+          }).range(pos);
           return Decoration.set([deco]);
         }
       }
@@ -402,10 +398,11 @@ function insertPlaceholderField(controller) {
 }
 
 class PlaceholderWidget extends WidgetType {
-  constructor(controller, lineNo, { persistent = false } = {}) {
+  constructor(controller, id, beforeAfter, { persistent = false } = {}) {
     super();
     this.controller = controller;
-    this.lineNo = lineNo;
+    this.id = id;
+    this.beforeAfter = beforeAfter;
     this.persistent = persistent;
   }
   toDOM() {
@@ -497,7 +494,7 @@ class PlaceholderWidget extends WidgetType {
   insertElement(type, wrap) {
     wrap.dispatchEvent(new CustomEvent("cm-request-insert", {
       bubbles: true,
-      detail: {type, lineNo: this.lineNo, beforeAfter: "after"}
+      detail: { type, id: this.id, beforeAfter: this.beforeAfter }
     }));
   }
 }
@@ -521,10 +518,11 @@ function persistentInsertBar(controller) {
         // After the last line
         pos = view.state.doc.length;
       }
-      let lineNo = view.state.doc.lineAt(pos).number - 2;
+      const ids = controller.elementOrder();
+      const lastId = ids.length > 1 ? ids[ids.length - 2] : null; // ignore _insert_bar_
       const deco = Decoration.widget({
         side: 1,
-        widget: new PlaceholderWidget(controller, lineNo, { persistent: true }),
+        widget: new PlaceholderWidget(controller, lastId, "after", { persistent:true }),
       }).range(pos);
       return Decoration.set([deco]);
     }
@@ -595,8 +593,8 @@ const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
 
 /* DRY extension builder */
 export const buildExtensions = controller => [
-  logSel(controller),  // debug only
-  logCaret(),  // debug only
+  // logSel(controller),  // debug only
+  // logCaret(),  // debug only
   editingField,
   makeEditDecorationField(controller),
   interceptEnter(controller),
@@ -637,24 +635,21 @@ export function createEditorView({ parent, controller }) {
   });
 
   view.dom.addEventListener("cm-request-insert", e => {
-    const { type, lineNo, beforeAfter } = e.detail;
-
+    const { type, id: refId, beforeAfter } = e.detail;
+    
     // Update Scrypt
-    const newId = controller.createElementAtLine(lineNo, type, beforeAfter);
-    if (newId) controller.setSelected(newId); // todo: place internal?
+    const newId   = controller.createElementRelativeTo(refId, type, beforeAfter);
 
     // Update caret/selection if a new element was added
-    let selection;
     if (newId) {
       const { start } = controller.elementPositions[newId];
       // clamp start+1 to actual doc lines
       const totalLines = view.state.doc.lines;
       const targetLine = Math.max(1, Math.min(start + 1, totalLines));
       if (start + 1 !== targetLine) console.warn(`cm-request-insert: start: ${start} + 1 clamped, totalLines: ${totalLines}`)
-      selection = { anchor: view.state.doc.line(targetLine).from };
     }
 
-    // 3. dispatch changes, opening edit mode on new element
+    // Dispatch changes, opening edit mode on new element
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: controller.text },
       effects: [
@@ -662,12 +657,10 @@ export function createEditorView({ parent, controller }) {
         cancelInsert.of(null),
         newId ? beginEdit.of({ id: newId }) : null
       ].filter(Boolean),
-      // selection
     });
 
     // Only refocus the editor if we didn't open a widget
     if (!newId) setTimeout(() => view.focus(), 0);
-    // view.focus();
   });
 
   return view
