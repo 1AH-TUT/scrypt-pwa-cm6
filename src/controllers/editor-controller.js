@@ -78,15 +78,16 @@ export class EditorController {
    * @returns { object } - containing SceneNo & ElementNo
    */
   findElementIndexesFromLineNo(lineNo, beforeAfter = 'after') {
-    // Map lineMeta to first line of each element
-    const meta = this.lineMeta[lineNo];
-    if (!meta || meta.id == null) {
-      console.error(`findElementIndexFromLineNo: no element found at lineNo: ${lineNo}`);
-      return { sceneNo: null, elementNo: null};
-    } else {
-      // We're "in" an element
-      const { sceneNo, elementNo } = meta;
-      return { sceneNo, elementNo }
+    // Walk up until we hit a line that belongs to an element (incase we were passed a blank)
+    let ln = lineNo;
+    while (ln >= 0) {
+      const meta = this.lineMeta[ln];
+      if (meta && meta.id != null) {
+        return {sceneNo: meta.sceneNo, elementNo: meta.elementNo};
+      }
+      ln--;
     }
+    console.error('findElementIndexesFromLineNo: no element found (started at', lineNo, ')');
+    return {sceneNo: null, elementNo: null};
   }
 }

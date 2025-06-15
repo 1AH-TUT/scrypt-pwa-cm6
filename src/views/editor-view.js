@@ -20,6 +20,30 @@ import '../components/edit-dialogue.js';
 import { myTheme } from './editor-view-themes.js';
 import { oneDark } from "@codemirror/theme-one-dark";
 
+/* Debug only stuff */
+function logSel(controller){
+  return ViewPlugin.fromClass(class{
+    update(u){
+      if (u.selectionSet){
+        const head = u.state.selection.main.head;
+        const ln   = u.state.doc.lineAt(head).number-1;
+        const m    = controller.lineMeta[ln];
+        console.debug('✏️', ln, m?.id, m?.type);
+      }
+    }
+  })
+}
+
+function logCaret() {
+  return ViewPlugin.fromClass(class {
+    update(u){
+      if (u.selectionSet){
+        const ln = u.state.doc.lineAt(u.state.selection.main.head).number;
+        console.debug('🪝 caret now at line', ln);
+      }
+    }
+  });
+}
 
 /*
   Editing Widget stuff
@@ -123,23 +147,34 @@ class LitBlockWidget extends WidgetType {
       });
 
       el.addEventListener('save', e => {
+        /* Update data model ------------------------------------- */
         this.controller.scrypt.updateElement(this.id, e.detail);
         this.controller.reindex();
         const newDoc = this.controller.text;
+
+        /* Dispatch 1 : replace the document, close the widget -- */
         view.dispatch({
-          changes: {from: 0, to: view.state.doc.length, insert: newDoc},
-          effects: [
+          changes : { from: 0, to: view.state.doc.length, insert: newDoc },
+          effects : [
             endEdit.of(null),
             StateEffect.reconfigure.of(buildExtensions(this.controller))
           ]
         });
 
-        // Restore selection to the current element's start after save
-        this.controller.reindex();
-        const {start} = this.controller.elementPositions[this.id];
-        const pos = view.state.doc.line(start + 1).from;
-        view.dispatch({selection: {anchor: pos}});
-        setTimeout(() => view.focus(), 0);
+        /* Wait one micro-task for CM’s line table to refresh ----- */
+        queueMicrotask(() => {
+          this.controller.reindex();                     // now matches CM’s doc
+          const { start } = this.controller.elementPositions[this.id];
+          const anchor    = view.state.doc.line(start + 1).from;
+
+          /* Dispatch #2 : move caret & scroll ------------------- */
+          view.dispatch({
+            selection:      { anchor },
+            scrollIntoView: true
+          });
+
+          view.focus();                                  // focus back to editor
+        });
       });
     }
 
@@ -560,6 +595,8 @@ const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
 
 /* DRY extension builder */
 export const buildExtensions = controller => [
+  logSel(controller),  // debug only
+  logCaret(),  // debug only
   editingField,
   makeEditDecorationField(controller),
   interceptEnter(controller),
@@ -602,25 +639,35 @@ export function createEditorView({ parent, controller }) {
   view.dom.addEventListener("cm-request-insert", e => {
     const { type, lineNo, beforeAfter } = e.detail;
 
-    // 1. mutate screenplay
+    // Update Scrypt
     const newId = controller.createElementAtLine(lineNo, type, beforeAfter);
+    if (newId) controller.setSelected(newId); // todo: place internal?
 
-    // 2 · rebuild document + drop placeholder
+    // Update caret/selection if a new element was added
+    let selection;
+    if (newId) {
+      const { start } = controller.elementPositions[newId];
+      // clamp start+1 to actual doc lines
+      const totalLines = view.state.doc.lines;
+      const targetLine = Math.max(1, Math.min(start + 1, totalLines));
+      if (start + 1 !== targetLine) console.warn(`cm-request-insert: start: ${start} + 1 clamped, totalLines: ${totalLines}`)
+      selection = { anchor: view.state.doc.line(targetLine).from };
+    }
+
+    // 3. dispatch changes, opening edit mode on new element
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: controller.text },
       effects: [
         StateEffect.reconfigure.of(buildExtensions(controller)),
-        cancelInsert.of(null)          // same txn – no flicker
-      ]
+        cancelInsert.of(null),
+        newId ? beginEdit.of({ id: newId }) : null
+      ].filter(Boolean),
+      // selection
     });
 
-    // 3 · place caret at first line of the fresh element
-    if (newId) {
-      const { start } = controller.elementPositions[newId];
-      view.dispatch({ selection: { anchor: view.state.doc.line(start + 1).from } });
-    }
-
-    view.focus();
+    // Only refocus the editor if we didn't open a widget
+    if (!newId) setTimeout(() => view.focus(), 0);
+    // view.focus();
   });
 
   return view

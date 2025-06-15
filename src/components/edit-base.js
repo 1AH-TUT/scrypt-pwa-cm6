@@ -84,6 +84,7 @@ export class EditBase extends LitElement {
       /* If Tab would leave the widget → intercept & save */
       if ( (!e.shiftKey && atLast) || (e.shiftKey && atFirst) ) {
         e.preventDefault();
+        e.stopPropagation();  // prevent CodeMirror from seeing this Tab
         this._finish('save');
       }
       /* otherwise let Tab move within the widget (do not preventDefault) */
