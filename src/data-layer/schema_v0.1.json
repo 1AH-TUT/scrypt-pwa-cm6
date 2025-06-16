@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://example.com/schemata/schema_v0.1.json",
+  "$id": "https://example.com/schemata/schema_v0.2.json",
   "title": "Screenplay Scrypt JSON",
   "type": "object",
   "required": ["titlePage", "data", "metaData"],
@@ -45,9 +45,8 @@
   "$defs": {
     "scene": {
       "type": "object",
-      "required": ["sceneNo", "id", "elements"],
+      "required": ["id", "elements"],
       "properties": {
-        "sceneNo": { "type": "integer", "minimum": 0 },
         "id": { "type": "string" },
         "elements": {
           "type": "array",
