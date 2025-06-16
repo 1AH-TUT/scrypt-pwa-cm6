@@ -37,10 +37,12 @@ export function toLinesAndMap(json) {
 
   // Add script meta
   blank();
-  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(k => {
-    if (k in json["titlePage"]) {
-      lines.push(`${json["titlePage"][k]}`);
-      lineMap.push({ "type":`${k}`});
+  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(key => {
+    if (key in json["titlePage"]) {
+      json["titlePage"][key].split(/\r?\n/).forEach((t,i)=>{
+        lines.push(t);
+        lineMap.push({type: `${key}`, field:"text", idx:i});
+      });
       blank();
     }
   });

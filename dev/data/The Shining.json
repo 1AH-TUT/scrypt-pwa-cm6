@@ -10,7 +10,6 @@
   "data": {
     "scenes": [
       {
-        "sceneNo": 0,
         "id": "s1",
         "elements": [
           {
@@ -21,7 +20,6 @@
         ]
       },
       {
-        "sceneNo": 1,
         "id": "s3",
         "elements": [
           {
@@ -45,7 +43,6 @@
         ]
       },
       {
-        "sceneNo": 2,
         "id": "s7",
         "elements": [
           {
@@ -144,7 +141,6 @@
         ]
       },
       {
-        "sceneNo": 3,
         "id": "s26",
         "elements": [
           {
@@ -340,7 +336,6 @@
         ]
       },
       {
-        "sceneNo": 4,
         "id": "s56",
         "elements": [
           {
@@ -364,7 +359,6 @@
         ]
       },
       {
-        "sceneNo": 5,
         "id": "s60",
         "elements": [
           {
@@ -522,7 +516,6 @@
         ]
       },
       {
-        "sceneNo": 6,
         "id": "s86",
         "elements": [
           {
@@ -543,7 +536,7 @@
     ]
   },
   "metaData": {
-    "schemaVer": "v0.1",
+    "schemaVer": "v0.2",
     "nextId": 89
   }
 }

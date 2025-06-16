@@ -157,9 +157,6 @@ export class Scrypt extends EventTarget {
           : sceneIndex + 1  // otherwise always after
       this.data.scenes.splice(insertAt, 0, newScene);
 
-      // (Optional) keep sceneNo in sync TODO: sceneNo not currently used downstream — calculation is implicit from order - remove this field?
-      this.data.scenes.forEach((sc, i) => sc.sceneNo = i);
-
       this._markDirty();
       return headingEl.id;
     }
