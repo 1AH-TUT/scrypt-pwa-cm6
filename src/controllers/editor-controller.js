@@ -9,6 +9,13 @@ export class EditorController {
     this.lineMeta = lineMap
     this.selectedId = null;
     this.elementPositions = {};
+    this._recomputeElementPositions();
+  }
+
+  _recomputeElementPositions() {
+    this.elementPositions = {};
+
+
     this.lineMeta.forEach((m, idx) => {
       if (m && m.id != null) {
         if (!this.elementPositions[m.id]) {
@@ -18,7 +25,6 @@ export class EditorController {
         }
       }
     });
-
   }
 
   get text() {
@@ -35,7 +41,6 @@ export class EditorController {
     const ids = [...new Set(this.lineMeta
       .filter(m => m && m.id != null)
       .map(m => m.id))];
-    ids.push("_insert_bar_");      // NEW
     return ids;
   }
 
@@ -46,12 +51,7 @@ export class EditorController {
     this.lineMeta = lineMap;
 
     // Recompute elementPositions
-    this.elementPositions = {};
-    this.lineMeta.forEach((m, idx) => {
-      if (m && m.id != null) {
-        (this.elementPositions[m.id] ||= {start: idx}).end = idx;
-      }
-    });
+    this._recomputeElementPositions();
   }
 
 
@@ -70,4 +70,33 @@ export class EditorController {
     console.warn(`createElementRelativeTo failed, refId: ${refId}, type: ${type}, beforeAfter: ${beforeAfter} - returning null`)
     return null;
   }
+
+  getNextSceneHeadingId(currentElementId) {
+    // Find the line number for the current element
+    const currentPos = this.elementPositions[currentElementId]?.start;
+    if (currentPos == null) return null;
+
+    // Find & return the id of the first scene_heading after this position
+    for (let i = currentPos + 1; i < this.lineMeta.length; ++i) {
+      if (this.lineMeta[i]?.type === "scene_heading") {
+        return this.lineMeta[i].id;
+      }
+    }
+    return null;
+  }
+
+  getPreviousSceneHeadingId(currentElementId) {
+    // Find the line number for the current element
+    const currentPos = this.elementPositions[currentElementId]?.start;
+    if (currentPos == null) return null;
+
+    // Find & return the id of the first scene_heading before this position
+    for (let i = currentPos - 1; i >= 0; --i) {
+      if (this.lineMeta[i]?.type === "scene_heading") {
+        return this.lineMeta[i].id;
+      }
+    }
+    return null;
+  }
+
 }

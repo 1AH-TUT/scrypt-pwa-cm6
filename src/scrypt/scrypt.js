@@ -1,6 +1,6 @@
 // src/scrypt/scrypt.js
 import { saveScrypt, getScrypt} from "../data-layer/db.js";
-import {DEFAULT_OPTIONS} from "./default-options.js";
+import { DEFAULT_OPTIONS } from "./default-options.js";
 
 /**
  * Scrypt: canonical screenplay object with autosave and change events.
@@ -74,51 +74,97 @@ export class Scrypt extends EventTarget {
 
   getOptions(field) {
     const defaults = DEFAULT_OPTIONS[field] ?? [];
-
     let used = [];
-    if (field === "location" || field === "indicator" || field === "time") {
-      used = [
-        ...new Set(this.data.scenes.map(sc =>
-          field === "location"   ? sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.location)
-          : field === "indicator"? sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.indicator)
-          :                       sc.elements.filter(e=>e.type==="scene_heading").map(e=>e.time)
-        ).flat().filter(Boolean))
-      ];
-    } else if (field === "transition") {
-      used = [
-        ...new Set(this.data.scenes.map(sc =>
-          sc.elements.filter(e=>e.type==="transition").map(e=>e.text)
-        ).flat().filter(Boolean))
-      ];
-    } else if (field === "character") {
-      used = [
-        ...new Set(this.data.scenes.map(sc =>
-          sc.elements.filter(e=>e.type==="dialogue" && e.character).map(e=>e.character)
-        ).flat().filter(Boolean))
-      ];
+
+    const extract = (type, prop) =>
+      this.data.scenes.flatMap(sc =>
+        sc.elements.filter(e => e.type === type && (prop ? e[prop] : true)).map(e => prop ? e[prop] : e.text)
+      ).filter(Boolean);
+
+    switch (field) {
+      case "location":
+      case "indicator":
+      case "time":
+        used = extract("scene_heading", field);
+        break;
+      case "transition":
+        used = extract("transition");
+        break;
+      case "character":
+        used = extract("dialogue", "character");
+        break;
     }
-    // Merge & dedupe
     return [...new Set([...defaults, ...used])];
   }
 
-  addElement(type, sceneIndex, elementIndex, beforeAfter) {
-    const newEl = { type, id: `se${this.metaData.nextId}`, text: '' };
-    this.metaData.nextId += 1;
-    const pos = beforeAfter === 'before' ? elementIndex : elementIndex + 1;
+  addElement(type, sceneIndex, elementIndex, beforeAfterScene) {
+    console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfterScene}`);
 
-    if (type === 'transition') {
-      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
-    } else if (type === 'action') {
-      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
-      this.data.scenes[sceneIndex].elements.splice(pos, 0, newEl)
-      this._markDirty();
-      return newEl.id;
-    } else if (type === 'dialogue') {
-      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
-    } else if (type === 'scene_heading') {
-      console.debug(`Scrypt.addElement type: ${type}, sceneIndex: ${sceneIndex}, elementIndex: ${elementIndex}, beforeAfter: ${beforeAfter}`);
+    /*
+     * Guards & edge cases...
+     */
+    const isInsertingAtSceneHeading = this.data.scenes[sceneIndex].elements[elementIndex].type === 'scene_heading';
+
+    if (type === 'scene_heading' && sceneIndex === 0) {
+      // scene 0 is only for leading transitions etc.
+      // TODO: flag user/remove button
+      console.warn("Attempt to insert scene_heading within scene 0 Ignored - returning null");
+      return null;
     }
 
+    /*
+     * Edge case: inserting any non-heading before a scene_heading
+     * (i.e. before an existing slugline) — push into previous scene
+     */
+    if ( isInsertingAtSceneHeading && type !== 'scene_heading' && beforeAfterScene === 'before') {
+      const targetSceneIdx= Math.max(0, sceneIndex - 1);  // scene 0 only for lead-ins
+      const targetPos= Math.max(0, this.data.scenes[targetSceneIdx].elements.length - 1);
+      // recurse as normal “after”
+      return this.addElement(type, targetSceneIdx, targetPos, 'after');
+    }
+
+    /*
+     * STANDARD INSERTIONS
+     */
+    const newEl = { type, id: `se${this.metaData.nextId++}`, text: '' };
+    const pos = beforeAfterScene === 'before' ? elementIndex : elementIndex + 1;
+
+    if (type === 'action' || type === 'transition' || type === 'dialogue' ) {
+      if (type === 'dialogue') Object.assign(newEl, { character: '', parenthetical: '' });
+      this.data.scenes[sceneIndex].elements.splice(pos, 0, newEl);
+      this._markDirty();
+      return newEl.id;
+    } else if (type === 'scene_heading') {
+      const scene = this.data.scenes[sceneIndex];
+
+      // Decide where to cut the scene's elements:
+      const splitAt = beforeAfterScene === 'before' ? elementIndex : elementIndex + 1;
+
+      // Carve off the tail only if we’re not inserting before the very first element (creating an empty new scene)
+      let tail = [];
+      if (!(beforeAfterScene === 'before' && splitAt === 0)) {
+        tail = scene.elements.splice(splitAt);
+      }
+
+      const headingEl = { ... newEl, indicator: 'INT.', location:  '', time:      '' };
+
+      // New scene = slugline + any tail
+      const newScene = { id: `s${this.metaData.nextId++}`, elements: [headingEl, ...tail] };
+
+      // Insert it at the right index
+      const insertAt = (beforeAfterScene === 'before' && elementIndex === 0)
+          ? sceneIndex      // place before an existing slugline
+          : sceneIndex + 1  // otherwise always after
+      this.data.scenes.splice(insertAt, 0, newScene);
+
+      // (Optional) keep sceneNo in sync TODO: sceneNo not currently used downstream — calculation is implicit from order - remove this field?
+      this.data.scenes.forEach((sc, i) => sc.sceneNo = i);
+
+      this._markDirty();
+      return headingEl.id;
+    }
+
+    console.warn(`Scrypt.addElement failed unknown type: ${type} - returning null`)
     return null;
   }
 }
