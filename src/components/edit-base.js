@@ -26,8 +26,6 @@ export class EditBase extends LitElement {
     .invalid { border: 2px solid #e53935; }
   `;
 
-  static enableBlurSave = true;  // dev debug toggle!
-
   #committed = false;
 
   connectedCallback() {
