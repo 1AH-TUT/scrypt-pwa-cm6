@@ -262,23 +262,27 @@ class PlaceholderWidget extends WidgetType {
     const isFirstRealSceneHeading = meta && meta.sceneNo === 1 && meta.type === 'scene_heading' && this.beforeAfter === 'before';
 
     const types = [
-      { label: 'Action',     type: 'action' },
-      { label: 'Dialogue',   type: 'dialogue' },
-      { label: 'Scene',      type: 'scene_heading' },
-      { label: 'Transition', type: 'transition' }
+      { label: 'Action',     type: 'action',        shortcut: 'A'  },
+      { label: 'Dialogue',   type: 'dialogue',      shortcut: 'D'  },
+      { label: 'Transition', type: 'transition',    shortcut: 'T'  },
+      { label: 'Scene',      type: 'scene_heading', shortcut: 'S' },
     ].filter(info => {
       // Only offer Action/Transition in scene 0
       if (isInSceneZero) return info.type === 'action' || info.type === 'transition';
       if (isFirstRealSceneHeading) return info.type !== 'dialogue';
       return true;
     });
+    const keyForType = Object.fromEntries(types.map(({ type, shortcut }) => [type, shortcut]));
 
     // Add the buttons
     types.forEach(info => {
+      const first = info.label[0];
+      const rest = info.label.slice(1);
       const btn = document.createElement('button');
-      btn.textContent = info.label;
-      btn.setAttribute('aria-label', `Insert ${info.label}`);
+      btn.innerHTML = `<span style="text-decoration: underline">${first}</span>${rest}`;
+      btn.setAttribute('aria-label', `Insert ${info.label} (${info.shortcut})`);
       btn.classList.add(`cm-insert-btn-${info.type}`);
+      btn.dataset.type = info.type;
       btn.onclick = () => this.insertElement(info.type, wrap);
       wrap.appendChild(btn);
     });
@@ -321,6 +325,19 @@ class PlaceholderWidget extends WidgetType {
       // Escape cancels
       if (e.key === 'Escape') {
         wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+      }
+
+      // If single letter (not combined with ctrl/alt/meta/shift)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.length === 1) {
+        const k = e.key.toUpperCase();
+        for (const info of types) {
+          if (keyForType[info.type] === k) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.insertElement(info.type, wrap);
+            return;
+          }
+        }
       }
     });
 
