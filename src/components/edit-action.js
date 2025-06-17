@@ -22,6 +22,7 @@ export class EditAction extends EditBase {
         class="inputlike focus"
         .value=${this.value ?? ''}
         @keydown=${this._onKeydown}
+        @blur=${this._maybeSaveOnWidgetBlur}
         aria-label="Action description"
       ></textarea>`;
   }

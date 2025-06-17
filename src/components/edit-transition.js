@@ -34,6 +34,7 @@ export class EditTransition extends EditBase {
           class="inputlike focus"
           aria-label="Transition type"
           @keydown=${this._onKeydown}
+          @blur=${this._maybeSaveOnWidgetBlur}
         >
           ${this.transitionOptions.map(o => opt(o, o === this.value))}
         </select>

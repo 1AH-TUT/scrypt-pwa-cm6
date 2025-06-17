@@ -26,6 +26,23 @@ export class EditBase extends LitElement {
     .invalid { border: 2px solid #e53935; }
   `;
 
+  static enableBlurSave = true;  // dev debug toggle!
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener('focusout', this._maybeSaveOnWidgetBlur, true);
+  }
+  disconnectedCallback() {
+    this.removeEventListener('focusout', this._maybeSaveOnWidgetBlur, true);
+    super.disconnectedCallback();
+  }
+  _maybeSaveOnWidgetBlur = (e) => {
+    if (!this.constructor.enableBlurSave) return;
+    // If focus is still inside this widget, do nothing
+    if (this.contains(e.relatedTarget)) return;
+    this._finish('save');
+  };
+
   /* ---------- Hooks for subclasses ---------- */
   _renderControl() { return html``; }
   _getPatch()      { return { text: this.value ?? '' }; }
