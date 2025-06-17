@@ -719,27 +719,23 @@ export function createEditorView({ parent, controller }) {
     // Update Scrypt
     const newId   = controller.createElementRelativeTo(refId, type, beforeAfter);
 
-    // Update caret/selection if a new element was added
+    // Close the insert bar right away
+    view.dispatch({ effects: cancelInsert.of(null) });
+
     if (newId) {
-      const { start } = controller.elementPositions[newId];
-      // clamp start+1 to actual doc lines
-      const totalLines = view.state.doc.lines;
-      const targetLine = Math.max(1, Math.min(start + 1, totalLines));
-      if (start + 1 !== targetLine) console.warn(`cm-request-insert: start: ${start} + 1 clamped, totalLines: ${totalLines}`)
+      // Open the edit widget for the new element only after the controller/model has flushed & view has updated
+      const open = () => {
+        controller.removeEventListener("change", open);
+        view.dispatch({ effects: beginEdit.of({ id: newId }) });
+        const { start } = controller.elementPositions[newId];
+        view.dispatch({
+          selection: { anchor: view.state.doc.line(start + 1).from },
+          scrollIntoView: true
+        });
+      };
+      // do this once, after the next change event is handled
+      controller.addEventListener("change", open, { once: true });
     }
-
-    // Dispatch changes, opening edit mode on new element
-    view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: controller.text },
-      effects: [
-        StateEffect.reconfigure.of(buildExtensions(controller)),
-        cancelInsert.of(null),
-        newId ? beginEdit.of({ id: newId }) : null
-      ].filter(Boolean),
-    });
-
-    // Only refocus the editor if we didn't open a widget
-    if (!newId) setTimeout(() => view.focus(), 0);
   });
 
   controller.addEventListener('change', e => {

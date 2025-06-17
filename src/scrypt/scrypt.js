@@ -159,7 +159,7 @@ export class Scrypt extends EventTarget {
 
       this._markDirty();
       this.dispatchEvent(new CustomEvent("change", {
-        detail: { kind: "insert", id: headingEl.id /* or newEl.id */, sceneIdx }
+        detail: { kind: "insert", id: headingEl.id /* or newEl.id */, sceneIndex }
       }));
       return headingEl.id;
     }

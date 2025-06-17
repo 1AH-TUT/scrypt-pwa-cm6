@@ -1,4 +1,4 @@
-const CACHE = 'cm6-v1.007';
+const CACHE = 'cm6-v1.008';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -10,12 +10,15 @@ const ASSETS = [
   'src/router.js',
   'src/widget-host.js',
 
-  // Components & Controllers
+  // Components
   'src/components/app-sidebar.js',
   'src/components/edit-base.js',
+  'src/components/edit-action.js',
   'src/components/edit-transition.js',
   'src/components/edit-scene-heading.js',
   'src/components/edit-dialogue.js',
+
+  // Controllers
   'src/controllers/editor-controller.js',
 
   // Data Layer
@@ -24,6 +27,7 @@ const ASSETS = [
   'src/data-layer/schema_v0.1.json',
 
   // Pages
+  'src/pages/index.js',
   'src/pages/editor.js',
   'src/pages/library.js',
   'src/pages/splash.js',

@@ -24,6 +24,8 @@ export class EditorController extends EventTarget {
   }
 
   _flush() {
+    console.debug('EditorController._flush', this._dirty, this._pendingDetails)
+
     if (!this._dirty) return;
     this._dirty = false;
 
@@ -72,6 +74,7 @@ export class EditorController extends EventTarget {
 
   /** Rebuild lines + maps after a JSON mutation */
   reindex() {
+    console.debug('EditorController reindex')
     const {lines, lineMap} = toLinesAndMap(this.scrypt);
     this.lines = lines;
     this.lineMeta = lineMap;
@@ -89,7 +92,6 @@ export class EditorController extends EventTarget {
     const {sceneNo, elementNo} = meta;
     const newId = this.scrypt.addElement(type, sceneNo, elementNo, beforeAfter, initialData);
     if (newId != null) {
-      this.reindex();
       this.setSelected(newId);
       return newId;
     }
