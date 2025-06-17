@@ -137,7 +137,20 @@ class LitBlockWidget extends WidgetType {
       node.appendChild(el);
 
       el.addEventListener('cancel', () => {
+        // close the widget
         view.dispatch({effects: endEdit.of(null)});
+
+        // Queue undo insert
+        queueMicrotask(() => {
+          // Yank if freshly added and user backed out
+          if (this.controller._pendingInserts.has(this.id)) {
+            this.controller._pendingInserts.delete(this.id);
+            this.controller.deleteElement(this.id, {deleteFullScene: false});
+            return;
+          }
+        });
+
+        // Restore selection/focus
         const {start} = this.controller.elementPositions[this.id];
         const pos = view.state.doc.line(start + 1).from;
         view.dispatch({selection: {anchor: pos}});
@@ -145,13 +158,16 @@ class LitBlockWidget extends WidgetType {
       });
 
       el.addEventListener('save', e => {
+        // Housekeeping
+        this.controller._pendingInserts.delete(this.id);
+
         // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
 
         // Immediately close the widget
         view.dispatch({ effects: endEdit.of(null) });
 
-        // Do the final selection/focus & doc-replace only after the controller/model has flushed & view has updated
+        // Do the final selection/focus & doc-replace only after the controller/model has _flushed & view has updated
         const open = () => {
           this.controller.removeEventListener('change', open);
 

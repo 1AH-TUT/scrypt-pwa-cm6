@@ -12,6 +12,7 @@ export class EditorController extends EventTarget {
     this.selectedId = null;
     this.elementPositions = {};
     this._pendingDetails = [];
+    this._pendingInserts = new Set();
     this._recomputeElementPositions();
     this._dirty = false;
 
@@ -92,6 +93,7 @@ export class EditorController extends EventTarget {
     const {sceneNo, elementNo} = meta;
     const newId = this.scrypt.addElement(type, sceneNo, elementNo, beforeAfter, initialData);
     if (newId != null) {
+      this._pendingInserts.add(newId);
       this.setSelected(newId);
       return newId;
     }
