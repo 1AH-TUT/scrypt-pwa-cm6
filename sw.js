@@ -1,4 +1,4 @@
-const CACHE = 'cm6-v1.008';
+const CACHE = 'cm6-v1.009';
 const ASSETS = [
   'index.html',
   'manifest.webmanifest',
