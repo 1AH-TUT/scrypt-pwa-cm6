@@ -28,6 +28,8 @@ export class EditBase extends LitElement {
 
   static enableBlurSave = true;  // dev debug toggle!
 
+  #committed = false;
+
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener('focusout', this._maybeSaveOnWidgetBlur, true);
@@ -40,7 +42,10 @@ export class EditBase extends LitElement {
     if (!this.constructor.enableBlurSave) return;
     // If focus is still inside this widget, do nothing
     if (this.contains(e.relatedTarget)) return;
-    this._finish('save');
+    // Defer the save until after the current CM6 update finishes
+    setTimeout(() => {
+      this._finish('save');
+    }, 0);
   };
 
   /* ---------- Hooks for subclasses ---------- */
@@ -53,6 +58,9 @@ export class EditBase extends LitElement {
 
   /* ---------- Shared save / cancel ---------- */
   _finish(type) {
+    if (this.#committed) return; // already fired once
+    this.#committed = true;
+
     if (type === 'save') {
       const patch = this._getPatch();
       if (patch) {

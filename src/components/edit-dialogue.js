@@ -68,7 +68,6 @@ export class EditDialogue extends EditBase {
           .value=${this.character}
           @input=${e => (this.character = e.target.value.toUpperCase())}
           @keydown=${this._onKeydown}
-          @blur=${this._maybeSaveOnWidgetBlur}
         />
         <datalist id="char-names">
           ${this.characterOptions.map(o => html`<option value=${o}>`)}

@@ -98,7 +98,6 @@ export class EditSceneHeading extends EditBase {
           aria-label="Location"
           @input=${e => (this.location = e.target.value)}
           @keydown=${this._onKeydown}
-          @blur=${this._maybeSaveOnWidgetBlur}
         />
         <datalist id="scene-locs">
           ${this.locationOptions.map(o => html`<option value=${o}>`)}
