@@ -132,7 +132,10 @@ export class Scrypt extends EventTarget {
     if (type === 'action' || type === 'transition' || type === 'dialogue' ) {
       if (type === 'dialogue') Object.assign(newEl, { character: '', parenthetical: '' });
       this.data.scenes[sceneIndex].elements.splice(pos, 0, newEl);
+
       this._markDirty();
+      this.dispatchEvent(new CustomEvent("change", { detail: { kind: "insert", id: newEl.id, sceneIndex } }));
+
       return newEl.id;
     } else if (type === 'scene_heading') {
       const scene = this.data.scenes[sceneIndex];
@@ -158,9 +161,7 @@ export class Scrypt extends EventTarget {
       this.data.scenes.splice(insertAt, 0, newScene);
 
       this._markDirty();
-      this.dispatchEvent(new CustomEvent("change", {
-        detail: { kind: "insert", id: headingEl.id /* or newEl.id */, sceneIndex }
-      }));
+      this.dispatchEvent(new CustomEvent("change", { detail: { kind: "insert", id: headingEl.id, sceneIndex } }));
       return headingEl.id;
     }
 
