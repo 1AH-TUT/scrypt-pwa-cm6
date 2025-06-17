@@ -81,7 +81,7 @@ export class EditSceneHeading extends EditBase {
     return html`<div class="row" role="group" aria-label="Scene heading">
         <!-- Indicator -->
         <select
-          class="inputlike focus indicator"
+          class="inputlike indicator"
           @input=${e => (this.indicator = e.target.value)}
           @keydown=${this._onKeydown}
           aria-label="Indicator (INT./EXT.)"

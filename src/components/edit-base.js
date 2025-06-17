@@ -12,6 +12,8 @@ import { LitElement, html, css } from 'lit';
  * @fires cancel - Event on cancel.
  */
 export class EditBase extends LitElement {
+  #committed = false;
+
   static properties = { value: { type: String } };
 
   static styles = css`
@@ -25,8 +27,6 @@ export class EditBase extends LitElement {
     }
     .invalid { border: 2px solid #e53935; }
   `;
-
-  #committed = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -51,8 +51,13 @@ export class EditBase extends LitElement {
   _getPatch()      { return { text: this.value ?? '' }; }
   /* ------------------------------------------ */
 
-  firstUpdated()  { this.shadowRoot.querySelector('.focus')?.focus(); }
-  render()        { return this._renderControl(); }
+  firstUpdated() {
+    // Find the first focusable input/select/textarea and focus it
+    const el = this.shadowRoot.querySelector('input, select, textarea');
+    if (el) el.focus();
+  }
+
+  render() { return this._renderControl(); }
 
   /* ---------- Shared save / cancel ---------- */
   _finish(type) {
