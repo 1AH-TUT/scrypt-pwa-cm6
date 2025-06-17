@@ -147,29 +147,26 @@ class LitBlockWidget extends WidgetType {
       el.addEventListener('save', e => {
         // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
-        this.controller.reindex();
-        const newDoc = this.controller.text;
 
-        // Replace the document, close the widget
-        view.dispatch({
-          changes : { from: 0, to: view.state.doc.length, insert: newDoc },
-          effects : [
-            endEdit.of(null),
-            StateEffect.reconfigure.of(buildExtensions(this.controller))
-          ]
-        });
+        // Immediately close the widget
+        view.dispatch({ effects: endEdit.of(null) });
 
-        // Wait one micro-task for CM’s line table to refresh
-        queueMicrotask(() => {
-          this.controller.reindex();
-          const { start } = this.controller.elementPositions[this.id];
-          const anchor    = view.state.doc.line(start + 1).from;
+        // Do the final selection/focus & doc-replace only after the controller/model has flushed & view has updated
+        const open = () => {
+          this.controller.removeEventListener('change', open);
+
+          // Build new doc text
+          const doc = this.controller.text;
+
           view.dispatch({
-            selection:      { anchor },
+            changes: { from: 0, to: view.state.doc.length, insert: doc },
+            effects: [ StateEffect.reconfigure.of(buildExtensions(this.controller)) ],
+            selection: { anchor: view.state.doc.line(this.controller.elementPositions[this.id].start + 1).from },
             scrollIntoView: true
           });
           view.focus();
-        });
+        };
+        this.controller.addEventListener('change', open, { once: true });
       });
     }
 
@@ -588,6 +585,7 @@ function elementSelector(controller) {
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
           controller.setSelected(meta?.id ?? null);
+          // if (meta?.id !== controller.selectedId) controller.setSelected(meta?.id ?? null);
         }
       }
     }
@@ -742,20 +740,19 @@ export function createEditorView({ parent, controller }) {
     const { kind } = e.detail || {};
     const newDoc = controller.text;
 
-    // Compute any new selection using controller.selectedId
-    let anchor = 0;
-    if (controller.selectedId) {
-      const pos = controller.elementPositions[controller.selectedId]?.start;
-      if (typeof pos === 'number') anchor = view.state.doc.line(pos + 1).from;
-    }
-
-    // TODO: Only update selection if it changed? or anchor is not null?
-
+    // Replace the document & reconfigure
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: newDoc },
-      selection: { anchor },
-      scrollIntoView: true,
       effects: [ StateEffect.reconfigure.of(buildExtensions(controller)) ]
+    });
+
+    // Queue positioning the cursor/selection
+    queueMicrotask(() => {
+      const pos = controller.elementPositions[controller.selectedId]?.start;
+      if (typeof pos === 'number') {
+        const anchor = view.state.doc.line(pos + 1).from;
+        view.dispatch({ selection: { anchor }, scrollIntoView: true });
+      }
     });
   });
 
