@@ -141,7 +141,7 @@ class LitBlockWidget extends WidgetType {
         const {start} = this.controller.elementPositions[this.id];
         const pos = view.state.doc.line(start + 1).from;
         view.dispatch({selection: {anchor: pos}});
-        setTimeout(() => view.focus(), 0);
+        requestAnimationFrame(() => view.focus());
       });
 
       el.addEventListener('save', e => {
@@ -164,7 +164,7 @@ class LitBlockWidget extends WidgetType {
             selection: { anchor: view.state.doc.line(this.controller.elementPositions[this.id].start + 1).from },
             scrollIntoView: true
           });
-          view.focus();
+          requestAnimationFrame(() => view.focus());
         };
         this.controller.addEventListener('change', open, { once: true });
       });
@@ -231,12 +231,12 @@ class PlaceholderWidget extends WidgetType {
     if (!this.persistent) {
       // If the bar loses focus, cancel
       wrap.addEventListener('blur', (e) => {
-        setTimeout(() => {
-          // If no button inside has focus
+        requestAnimationFrame(() => {
+          // Prevent the bar from closing immediately when focus moves between buttons
           if (!wrap.contains(document.activeElement)) {
             wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
           }
-        }, 0);
+        });
       }, true); // useCapture: true so it fires as soon as any child blurs
     }
 
@@ -310,9 +310,9 @@ class PlaceholderWidget extends WidgetType {
 
     if (!this.persistent) {
       // first let CodeMirror finish its internal focus dance, then grab focus for the first button.
-      setTimeout(() => {
-       setTimeout(() => wrap.querySelector('button')?.focus(), 0);
-      }, 0);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { wrap.querySelector('button')?.focus(); });
+      });
     }
 
     return wrap;
@@ -498,7 +498,7 @@ function elementNavigator(controller) {
     view.dispatch({ effects: beginInsert.of({ pos, id: curId, beforeAfter: loc === "below" ? "after" : "before" }) });
 
     // focus the editor
-    setTimeout(() => view.focus(), 0);
+    requestAnimationFrame(() => view.focus());
 
     return true;
   }
@@ -584,8 +584,8 @@ function elementSelector(controller) {
           const head = update.state.selection.main.head;
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
-          controller.setSelected(meta?.id ?? null);
-          // if (meta?.id !== controller.selectedId) controller.setSelected(meta?.id ?? null);
+          // controller.setSelected(meta?.id ?? null);
+          if (meta?.id !== controller.selectedId) controller.setSelected(meta?.id ?? null);
         }
       }
     }
@@ -649,21 +649,6 @@ function interceptEnter(controller){
   }]);
 }
 
-function focusInsertBar(view) {
-  const bar = view.dom.querySelector(".cm-insert-bar");
-  if (!bar) return false;
-
-  // Move CM selection to the last document position
-  const end = view.state.doc.length;
-  view.dispatch({selection: {anchor: end}, scrollIntoView: true});
-
-  // Only grab DOM focus if we’re not already in the bar
-  if (!bar.contains(document.activeElement)) {
-    bar.querySelector("button")?.focus();
-  }
-  return true;
-}
-
 export const buildExtensions = controller => [
   // logSel(controller),  // debug only
   // logCaret(),  // debug only
@@ -708,7 +693,7 @@ export function createEditorView({ parent, controller }) {
 
   view.dom.addEventListener('cm-cancel-insert', () => {
     view.dispatch({ effects: cancelInsert.of(null) });
-    setTimeout(() => view.focus(), 0);
+      queueMicrotask(() => view.focus());
   });
 
   view.dom.addEventListener("cm-request-insert", e => {
