@@ -46,7 +46,7 @@ export class Scrypt extends EventTarget {
     Object.assign(element, patch);
 
     this._markDirty();
-    this.dispatchEvent(new CustomEvent("change", { detail: { type: "element", id, old, new: element } }));
+    this.dispatchEvent(new CustomEvent("change", { detail: { kind: "text", type: "element", id, old, new: element } }));
   }
 
   /** Mark the document dirty and schedule an autosave */
@@ -158,10 +158,88 @@ export class Scrypt extends EventTarget {
       this.data.scenes.splice(insertAt, 0, newScene);
 
       this._markDirty();
+      this.dispatchEvent(new CustomEvent("change", {
+        detail: { kind: "insert", id: headingEl.id /* or newEl.id */, sceneIdx }
+      }));
       return headingEl.id;
     }
 
     console.warn(`Scrypt.addElement failed unknown type: ${type} - returning null`)
     return null;
   }
+
+
+  removeElement(elementId, { deleteFullScene = false } = {}) {
+    // Find the scene and index containing this element
+    let sceneIdx = -1, elIdx = -1;
+    for (let s = 0; s < this.data.scenes.length; ++s) {
+      const idx = this.data.scenes[s].elements.findIndex(e => e.id === elementId);
+      if (idx !== -1) {
+        sceneIdx = s;
+        elIdx = idx;
+        break;
+      }
+    }
+    if (sceneIdx === -1) {
+      console.error(`Script.removeElement: no element found with Id: ${elementId}`);
+      return false;
+    }
+
+    const scene = this.data.scenes[sceneIdx];
+    const el = scene.elements[elIdx];
+    const oldScene = structuredClone(scene);
+    const oldEl = structuredClone(el);
+
+    if (el.type === 'scene_heading') {
+      // Cannot delete scene heading in first scene
+      if (sceneIdx <= 1) {
+        console.warn("Cannot delete first scene's slugline!");
+        return false;
+      }
+
+    if (deleteFullScene) {
+      // Remove whole scene
+      this.data.scenes.splice(sceneIdx, 1);
+      this._markDirty();
+      this.dispatchEvent(new CustomEvent("change", {
+        detail: {
+          kind: "cut_scene",
+          id: oldScene.id,
+          old: oldScene
+        }
+      }));
+      return true;
+    } else {
+      // Merge current scene's elements (except heading) into previous scene
+      const prevScene = this.data.scenes[sceneIdx - 1];
+      const tail = scene.elements.slice(1); // everything after heading
+      prevScene.elements.push(...tail);
+
+      // Remove this scene entirely
+      this.data.scenes.splice(sceneIdx, 1);
+
+      this._markDirty();
+      this.dispatchEvent(new CustomEvent("change", {
+        detail: {
+          kind: "delete_scene_heading",
+          id: elementId,
+          old: oldScene
+        }
+      }));
+      return true;
+      }
+    } else {
+      // Remove element from scene
+      scene.elements.splice(elIdx, 1);
+
+      this._markDirty();
+      this.dispatchEvent(new CustomEvent("change", { detail: {
+          kind: "delete_element",
+          id: elementId,
+          old: oldEl
+        }}));
+      return true;
+    }
+  }
+
 }

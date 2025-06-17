@@ -1,20 +1,46 @@
 import { toLinesAndMap } from "../scrypt/element-utils.js";
 import { getCurrentScrypt } from "../state/current-scrypt.js";
 
-export class EditorController {
+export class EditorController extends EventTarget {
   constructor() {
+    super();
+
     this.scrypt = getCurrentScrypt();
     const {lines, lineMap} = toLinesAndMap(this.scrypt);
     this.lines = lines;
     this.lineMeta = lineMap
     this.selectedId = null;
     this.elementPositions = {};
+    this._pendingDetails = [];
     this._recomputeElementPositions();
+    this._dirty = false;
+
+    // listen to all model changes
+    this.scrypt.addEventListener("change", e => {
+      this._dirty = true;
+      this._pendingDetails.push(e.detail);
+      queueMicrotask(() => this._flush());
+    });
+  }
+
+  _flush() {
+    if (!this._dirty) return;
+    this._dirty = false;
+
+    this.reindex();
+    // _pendingDetails for future expansion, process here
+    this._pendingDetails = [];
+
+    this.dispatchEvent(new CustomEvent("change", {
+      detail: {
+        selectedId: this.selectedId,
+        // surface whatever else the view might want from _pendingDetails
+      }
+    }));
   }
 
   _recomputeElementPositions() {
     this.elementPositions = {};
-
 
     this.lineMeta.forEach((m, idx) => {
       if (m && m.id != null) {
@@ -97,6 +123,30 @@ export class EditorController {
       }
     }
     return null;
+  }
+
+  /**
+   * Delete an element by ID, with optional full scene removal for scene headings.
+   * Returns new selected element id (or null if nothing left).
+   */
+  deleteElement(refId, { deleteFullScene = false } = {}) {
+    const orderBefore = this.elementOrder();
+    const idx = orderBefore.indexOf(refId);
+
+    // Pick next or previous before we mutate
+    const nextId = orderBefore[idx + 1] || null;
+    const prevId = orderBefore[idx - 1] || null;
+
+    if (!this.scrypt.removeElement(refId, { deleteFullScene })) return null;
+
+    // Find candidate in new order
+    const orderAfter = this.elementOrder();
+    let selectedId = nextId && orderAfter.includes(nextId) ? nextId :
+                     prevId && orderAfter.includes(prevId) ? prevId :
+                     orderAfter[0] || null;
+
+    this.setSelected(selectedId);
+    return selectedId;
   }
 
 }

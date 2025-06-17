@@ -538,6 +538,22 @@ function elementNavigator(controller) {
     return false;
   }
 
+  function makeElementDelete(controller) {
+    return function (view) {
+      // Ignore if focus is in an insert bar - might not be needed...
+      if (document.activeElement?.closest(".cm-insert-bar")) {
+        return false;
+      }
+
+      const id = controller.selectedId;
+      if (!id) return false;
+
+      controller.deleteElement(id, { deleteFullScene: false });
+      return true;
+    };
+  }
+  const deleteCmd = makeElementDelete(controller);
+
   return keymap.of([
     {
       key: "Tab", run: view => {
@@ -553,9 +569,11 @@ function elementNavigator(controller) {
     },
     { key: "Home",      run: gotoFirst, preventDefault: true },
     { key: "End",       run: gotoLast , preventDefault: true },
-    { key: "PageUp",    run: view => gotoPrevScene(view, controller) },
-    { key: "PageDown",  run: view => gotoNextScene(view, controller) },
-    { key: "Alt-n", run: insertPlaceholder("below")  },
+    { key: "PageUp",    run: view => gotoPrevScene(view, controller), preventDefault: true },
+    { key: "PageDown",  run: view => gotoNextScene(view, controller), preventDefault: true },
+    { key: "Delete",    run: deleteCmd, preventDefault: true },
+    { key: "Backspace", run: deleteCmd, preventDefault: true },
+    { key: "Alt-n",     run: insertPlaceholder("below")  },
     { key: "Alt-Shift-n", run: insertPlaceholder("above")  },
   ]);
 }
@@ -722,6 +740,27 @@ export function createEditorView({ parent, controller }) {
 
     // Only refocus the editor if we didn't open a widget
     if (!newId) setTimeout(() => view.focus(), 0);
+  });
+
+  controller.addEventListener('change', e => {
+    const { kind } = e.detail || {};
+    const newDoc = controller.text;
+
+    // Compute any new selection using controller.selectedId
+    let anchor = 0;
+    if (controller.selectedId) {
+      const pos = controller.elementPositions[controller.selectedId]?.start;
+      if (typeof pos === 'number') anchor = view.state.doc.line(pos + 1).from;
+    }
+
+    // TODO: Only update selection if it changed? or anchor is not null?
+
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: newDoc },
+      selection: { anchor },
+      scrollIntoView: true,
+      effects: [ StateEffect.reconfigure.of(buildExtensions(controller)) ]
+    });
   });
 
   return view
