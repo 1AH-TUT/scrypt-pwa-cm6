@@ -45,9 +45,7 @@ function logCaret() {
   });
 }
 
-/*
-  Editing Widget stuff
-  */
+/* Editing Widget stuff */
 
 export const beginEdit = StateEffect.define();   // value: { id }
 export const endEdit   = StateEffect.define();   // value: null
@@ -139,39 +137,52 @@ class LitBlockWidget extends WidgetType {
       node.appendChild(el);
 
       el.addEventListener('cancel', () => {
+        // close the widget
         view.dispatch({effects: endEdit.of(null)});
+
+        // Queue undo insert
+        queueMicrotask(() => {
+          // Yank if freshly added and user backed out
+          if (this.controller._pendingInserts.has(this.id)) {
+            this.controller._pendingInserts.delete(this.id);
+            this.controller.deleteElement(this.id, {deleteFullScene: false});
+            return;
+          }
+        });
+
+        // Restore selection/focus
         const {start} = this.controller.elementPositions[this.id];
         const pos = view.state.doc.line(start + 1).from;
         view.dispatch({selection: {anchor: pos}});
-        setTimeout(() => view.focus(), 0);
+        requestAnimationFrame(() => view.focus());
       });
 
       el.addEventListener('save', e => {
+        // Housekeeping
+        this.controller._pendingInserts.delete(this.id);
+
         // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
-        this.controller.reindex();
-        const newDoc = this.controller.text;
 
-        // Replace the document, close the widget
-        view.dispatch({
-          changes : { from: 0, to: view.state.doc.length, insert: newDoc },
-          effects : [
-            endEdit.of(null),
-            StateEffect.reconfigure.of(buildExtensions(this.controller))
-          ]
-        });
+        // Immediately close the widget
+        view.dispatch({ effects: endEdit.of(null) });
 
-        // Wait one micro-task for CM’s line table to refresh
-        queueMicrotask(() => {
-          this.controller.reindex();
-          const { start } = this.controller.elementPositions[this.id];
-          const anchor    = view.state.doc.line(start + 1).from;
+        // Do the final selection/focus & doc-replace only after the controller/model has _flushed & view has updated
+        const open = () => {
+          this.controller.removeEventListener('change', open);
+
+          // Build new doc text
+          const doc = this.controller.text;
+
           view.dispatch({
-            selection:      { anchor },
+            changes: { from: 0, to: view.state.doc.length, insert: doc },
+            effects: [ StateEffect.reconfigure.of(buildExtensions(this.controller)) ],
+            selection: { anchor: view.state.doc.line(this.controller.elementPositions[this.id].start + 1).from },
             scrollIntoView: true
           });
-          view.focus();
-        });
+          requestAnimationFrame(() => view.focus());
+        };
+        this.controller.addEventListener('change', open, { once: true });
       });
     }
 
@@ -179,12 +190,210 @@ class LitBlockWidget extends WidgetType {
   }
 }
 
+/*  Placeholder/Insert Bar */
 
-/*
-  CM6 Extensions
-  */
+export const beginInsert = StateEffect.define();
 
-// Layout (maps element types to decoration classes)
+export const cancelInsert = StateEffect.define();
+
+function insertPlaceholderField(controller) {
+  return StateField.define({
+    create() { return Decoration.none; },
+
+    update(decos, tr) {
+      // Keep current decorations in sync with document edits
+      if (tr.docChanged) decos = decos.map(tr.changes);
+
+      // Loop over all effects in this transaction
+      for (let ef of tr.effects) {
+        // Remove the placeholder if cancel effect seen
+        if (ef.is(cancelInsert)) return Decoration.none;
+
+        // If beginInsert, insert placeholde with the element id
+        if (ef.is(beginInsert)) {
+          const { pos, id, beforeAfter } = ef.value;
+          const deco = Decoration.widget({
+            side: 1,
+            widget: new PlaceholderWidget(controller, id, beforeAfter)
+          }).range(pos);
+          return Decoration.set([deco]);
+        }
+      }
+      // Otherwise, no change
+      return decos;
+    },
+
+    provide: f => EditorView.decorations.from(f)
+  });
+}
+
+class PlaceholderWidget extends WidgetType {
+  constructor(controller, id, beforeAfter, { persistent = false } = {}) {
+    super();
+    this.controller = controller;
+    this.id = id;
+    this.beforeAfter = beforeAfter;
+    this.persistent = persistent;
+  }
+  toDOM() {
+    const { controller, id } = this;
+    const wrap = document.createElement('div');
+    wrap.className = 'cm-insert-bar';
+    wrap.setAttribute('role', 'toolbar');
+    wrap.setAttribute('aria-label', 'Insert element');
+    wrap.setAttribute('aria-keyshortcuts', 'Alt+N, Alt+Shift+N');
+    wrap.tabIndex = -1;  // focusable but skipped in Tab order
+
+    if (!this.persistent) {
+      // If the bar loses focus, cancel
+      wrap.addEventListener('blur', (e) => {
+        requestAnimationFrame(() => {
+          // Prevent the bar from closing immediately when focus moves between buttons
+          if (!wrap.contains(document.activeElement)) {
+            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+          }
+        });
+      }, true); // useCapture: true so it fires as soon as any child blurs
+    }
+
+    // Look up the meta for the ref element
+    const meta = controller.lineMeta.find(m => m && m.id === id);
+    const isInSceneZero = meta && meta.sceneNo === 0;
+    const isFirstRealSceneHeading = meta && meta.sceneNo === 1 && meta.type === 'scene_heading' && this.beforeAfter === 'before';
+
+    const types = [
+      { label: 'Action',     type: 'action',        shortcut: 'A'  },
+      { label: 'Dialogue',   type: 'dialogue',      shortcut: 'D'  },
+      { label: 'Transition', type: 'transition',    shortcut: 'T'  },
+      { label: 'Scene',      type: 'scene_heading', shortcut: 'S' },
+    ].filter(info => {
+      // Only offer Action/Transition in scene 0
+      if (isInSceneZero) return info.type === 'action' || info.type === 'transition';
+      if (isFirstRealSceneHeading) return info.type !== 'dialogue';
+      return true;
+    });
+    const keyForType = Object.fromEntries(types.map(({ type, shortcut }) => [type, shortcut]));
+
+    // Add the buttons
+    types.forEach(info => {
+      const first = info.label[0];
+      const rest = info.label.slice(1);
+      const btn = document.createElement('button');
+      btn.innerHTML = `<span style="text-decoration: underline">${first}</span>${rest}`;
+      btn.setAttribute('aria-label', `Insert ${info.label} (${info.shortcut})`);
+      btn.classList.add(`cm-insert-btn-${info.type}`);
+      btn.dataset.type = info.type;
+      btn.onclick = () => this.insertElement(info.type, wrap);
+      wrap.appendChild(btn);
+    });
+
+    wrap.addEventListener('keydown', e => {
+      const btns = Array.from(wrap.querySelectorAll('button'));
+      const idx  = btns.indexOf(document.activeElement);
+
+      // Arrow keys cycle buttons
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const step = e.key === 'ArrowRight' ? 1 : -1;
+        const next = btns[(idx + step + btns.length) % btns.length];
+        next.focus();
+        return;
+      }
+
+      if (this.persistent) return;
+
+      // Tab / Shift+Tab at ends cancels, otherwise moves between buttons
+      if (e.key === 'Tab') {
+        e.preventDefault();
+
+        if (e.shiftKey) {
+          if (idx === 0) {
+            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+          } else {
+            btns[idx - 1].focus();
+          }
+        } else {
+          if (idx === btns.length - 1) {
+            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+          } else {
+            btns[idx + 1].focus();
+          }
+        }
+        return;
+      }
+
+      // Escape cancels
+      if (e.key === 'Escape') {
+        wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
+      }
+
+      // If single letter (not combined with ctrl/alt/meta/shift)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.length === 1) {
+        const k = e.key.toUpperCase();
+        for (const info of types) {
+          if (keyForType[info.type] === k) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.insertElement(info.type, wrap);
+            return;
+          }
+        }
+      }
+    });
+
+    if (!this.persistent) {
+      // first let CodeMirror finish its internal focus dance, then grab focus for the first button.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { wrap.querySelector('button')?.focus(); });
+      });
+    }
+
+    return wrap;
+  }
+  insertElement(type, wrap) {
+    wrap.dispatchEvent(new CustomEvent("cm-request-insert", {
+      bubbles: true,
+      detail: { type, id: this.id, beforeAfter: this.beforeAfter }
+    }));
+  }
+}
+
+function persistentInsertBar(controller) {
+  return ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = this.build(view);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.build(update.view);
+      }
+    }
+    build(view) {
+      // Find the position for the persistent placeholder:
+      let pos;
+      if (view.state.doc.length === 0) {
+        pos = 0;
+      } else {
+        // After the last line
+        pos = view.state.doc.length;
+      }
+      const ids = getElementOrder(controller);
+      const lastId = ids.length > 1 ? ids[ids.length - 2] : null; // ignore _insert_bar_
+      const deco = Decoration.widget({
+        side: 1,
+        widget: new PlaceholderWidget(controller, lastId, "after", { persistent:true }),
+      }).range(pos);
+      return Decoration.set([deco]);
+    }
+  }, {
+    decorations: v => v.decorations
+  });
+}
+
+
+/* Other CM6 Extensions */
+
+// Layout
 function screenplayLayout(controller) {
   return ViewPlugin.fromClass(class {
     constructor(view) { this.decorations = this.build(view); }
@@ -234,22 +443,10 @@ function screenplayLayout(controller) {
   }, { decorations: v => v.decorations });
 }
 
-function interceptEnter(controller){
-  return keymap.of([{
-    key:'Enter',
-    run(view){
-      const ln   = view.state.doc.lineAt(view.state.selection.main.head).number-1;
-      const meta = controller.lineMeta[ln];
-      if (!['action', 'transition', 'scene_heading', 'dialogue'].includes(meta?.type)) return false;
-      view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
-      return true;
-    }
-  }]);
-}
-
+// Navigation
 function elementNavigator(controller) {
   // Helper: move selection to the first line of element `targetId`
-  const gotoElement = (view, targetId) => {
+  const gotoElement = (view, targetId, scrollToBlank=true, block="nearest") => {
     if (targetId === "_insert_bar_") {
       // Find the persistent insert bar and focus it
       const bar = view.dom.querySelector('.cm-insert-bar');
@@ -269,21 +466,22 @@ function elementNavigator(controller) {
       const { node } = view.domAtPos(pos);
       const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
       const lineDiv = el.closest(".cm-line");
-      if (lineDiv) lineDiv.scrollIntoView({ block: "nearest" });
+      if (lineDiv) lineDiv.scrollIntoView({ block });
     };
 
     // Scroll the first line (nearest)
     scrollLineAt(startPos);
 
-    // Scroll the *blank* line after the element,
-    const blankPos = doc.line(end + 2).from;
-    scrollLineAt(blankPos);
-
+    // Scroll the blank line after the element,
+    if (scrollToBlank) {
+      const blankPos = doc.line(end + 2).from;
+      scrollLineAt(blankPos);
+    }
     view.focus();
   };
 
   const move = dir => view => {
-    const ids = controller.elementOrder();
+    const ids = getElementOrder(controller);
 
     // What’s the element under the current selection head?
     let curId = controller.selectedId;
@@ -301,7 +499,7 @@ function elementNavigator(controller) {
   const insertPlaceholder = loc => view => {
     console.debug("insertPlaceholder :", loc)
 
-    const ids = controller.elementOrder();
+    const ids = getElementOrder(controller);
     if (!ids.length) return false;
 
     let curId = controller.selectedId;
@@ -333,204 +531,82 @@ function elementNavigator(controller) {
     view.dispatch({ effects: beginInsert.of({ pos, id: curId, beforeAfter: loc === "below" ? "after" : "before" }) });
 
     // focus the editor
-    setTimeout(() => view.focus(), 0);
+    requestAnimationFrame(() => view.focus());
 
     return true;
   }
 
   const inInsertBar = () => !!document.activeElement?.closest(".cm-insert-bar");
 
+  const gotoFirst = view => {
+    const first = getElementOrder(controller)[0];
+    gotoElement(view, first);           // scene-0 or first real element
+    return true;
+  };
+
+  const gotoLast = view => {
+    const last = getElementOrder(controller).slice(-2)[0]; // before _insert_bar_
+    gotoElement(view, last);
+    return true;
+  };
+
+  function gotoNextScene(view, controller) {
+    const nextId = controller.getNextSceneHeadingId(controller.selectedId);
+    if (nextId) {
+      gotoElement(view, nextId, false, "center");
+      return true;
+    }
+    return false;
+  }
+
+  function gotoPrevScene(view, controller) {
+    const prevId = controller.getPreviousSceneHeadingId(controller.selectedId);
+    if (prevId) {
+      gotoElement(view, prevId, false, "center");
+      return true;
+    }
+    return false;
+  }
+
+  function makeElementDelete(controller) {
+    return function (view) {
+      // Ignore if focus is in an insert bar - might not be needed...
+      if (document.activeElement?.closest(".cm-insert-bar")) {
+        return false;
+      }
+
+      const id = controller.selectedId;
+      if (!id) return false;
+
+      controller.deleteElement(id, { deleteFullScene: false });
+      return true;
+    };
+  }
+  const deleteCmd = makeElementDelete(controller);
+
   return keymap.of([
     {
-      key: "Tab",
-      run: view => {
-        if (inInsertBar()) return false;          // let browser handle it
-        return move("next")(view);                // our own navigation
+      key: "Tab", run: view => {
+        if (inInsertBar()) return false;
+        return move("next")(view);
       }
     },
     {
-      key: "Shift-Tab",
-      run: view => {
-          if (inInsertBar()) return false;          // browser handles reverse-tab
+      key: "Shift-Tab", run: view => {
+        if (inInsertBar()) return false;
         return move("prev")(view);
       }
     },
-    { key: "Alt-n", run: insertPlaceholder("below")  },
+    { key: "Home",      run: gotoFirst, preventDefault: true },
+    { key: "End",       run: gotoLast , preventDefault: true },
+    { key: "PageUp",    run: view => gotoPrevScene(view, controller), preventDefault: true },
+    { key: "PageDown",  run: view => gotoNextScene(view, controller), preventDefault: true },
+    { key: "Delete",    run: deleteCmd, preventDefault: true },
+    { key: "Backspace", run: deleteCmd, preventDefault: true },
+    { key: "Alt-n",     run: insertPlaceholder("below")  },
     { key: "Alt-Shift-n", run: insertPlaceholder("above")  },
   ]);
 }
-
-/* begin insertPlaceholder stuff - to be moved later */
-
-export const beginInsert = StateEffect.define();
-
-export const cancelInsert = StateEffect.define();
-
-function insertPlaceholderField(controller) {
-  return StateField.define({
-    create() { return Decoration.none; },
-
-    update(decos, tr) {
-      // Keep current decorations in sync with document edits
-      if (tr.docChanged) decos = decos.map(tr.changes);
-
-      // Loop over all effects in this transaction
-      for (let ef of tr.effects) {
-        // Remove the placeholder if cancel effect seen
-        if (ef.is(cancelInsert)) return Decoration.none;
-
-        // If beginInsert, insert placeholde with the element id
-        if (ef.is(beginInsert)) {
-          const { pos, id, beforeAfter } = ef.value;
-          const deco = Decoration.widget({
-            side: 1,
-            widget: new PlaceholderWidget(controller, id, beforeAfter)
-          }).range(pos);
-          return Decoration.set([deco]);
-        }
-      }
-      // Otherwise, no change
-      return decos;
-    },
-
-    provide: f => EditorView.decorations.from(f)
-  });
-}
-
-class PlaceholderWidget extends WidgetType {
-  constructor(controller, id, beforeAfter, { persistent = false } = {}) {
-    super();
-    this.controller = controller;
-    this.id = id;
-    this.beforeAfter = beforeAfter;
-    this.persistent = persistent;
-  }
-  toDOM() {
-    const wrap = document.createElement('div');
-    wrap.className = 'cm-insert-bar';
-    wrap.setAttribute('role', 'toolbar');
-    wrap.setAttribute('aria-label', 'Insert element');
-    wrap.setAttribute('aria-keyshortcuts', 'Alt+N, Alt+Shift+N');
-    wrap.tabIndex = -1;  // focusable but skipped in Tab order
-
-    if (!this.persistent) {
-      // If the bar loses focus, cancel
-      wrap.addEventListener('blur', (e) => {
-        setTimeout(() => {
-          // If no button inside has focus
-          if (!wrap.contains(document.activeElement)) {
-            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
-          }
-        }, 0);
-      }, true); // useCapture: true so it fires as soon as any child blurs
-    }
-
-    const types = [
-      { label: 'Action',     type: 'action' },
-      { label: 'Dialogue',   type: 'dialogue' },
-      { label: 'Scene',      type: 'scene_heading' },
-      { label: 'Transition', type: 'transition' }
-    ];
-    // Add the buttons
-    types.forEach(info => {
-      const btn = document.createElement('button');
-      btn.textContent = info.label;
-      btn.setAttribute('aria-label', `Insert ${info.label}`);
-      btn.classList.add(`cm-insert-btn-${info.type}`);
-      btn.onclick = () => this.insertElement(info.type, wrap);
-      wrap.appendChild(btn);
-    });
-
-    wrap.addEventListener('keydown', e => {
-      const btns = Array.from(wrap.querySelectorAll('button'));
-      const idx  = btns.indexOf(document.activeElement);
-
-      // Arrow keys cycle buttons
-      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-        e.preventDefault();
-        const step = e.key === 'ArrowRight' ? 1 : -1;
-        const next = btns[(idx + step + btns.length) % btns.length];
-        next.focus();
-        return;
-      }
-
-      if (this.persistent) return;
-
-      // Tab / Shift+Tab at ends cancels, otherwise moves between buttons
-      if (e.key === 'Tab') {
-        e.preventDefault();
-
-        if (e.shiftKey) {
-          if (idx === 0) {
-            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
-          } else {
-            btns[idx - 1].focus();
-          }
-        } else {
-          if (idx === btns.length - 1) {
-            wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
-          } else {
-            btns[idx + 1].focus();
-          }
-        }
-        return;
-      }
-
-      // Escape cancels
-      if (e.key === 'Escape') {
-        wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
-      }
-    });
-
-    if (!this.persistent) {
-      // first let CodeMirror finish its internal focus dance, then grab focus for the first button.
-      setTimeout(() => {
-       setTimeout(() => wrap.querySelector('button')?.focus(), 0);
-      }, 0);
-    }
-
-    return wrap;
-  }
-  insertElement(type, wrap) {
-    wrap.dispatchEvent(new CustomEvent("cm-request-insert", {
-      bubbles: true,
-      detail: { type, id: this.id, beforeAfter: this.beforeAfter }
-    }));
-  }
-}
-
-function persistentInsertBar(controller) {
-  return ViewPlugin.fromClass(class {
-    constructor(view) {
-      this.decorations = this.build(view);
-    }
-    update(update) {
-      if (update.docChanged || update.viewportChanged) {
-        this.decorations = this.build(update.view);
-      }
-    }
-    build(view) {
-      // Find the position for the persistent placeholder:
-      let pos;
-      if (view.state.doc.length === 0) {
-        pos = 0;
-      } else {
-        // After the last line
-        pos = view.state.doc.length;
-      }
-      const ids = controller.elementOrder();
-      const lastId = ids.length > 1 ? ids[ids.length - 2] : null; // ignore _insert_bar_
-      const deco = Decoration.widget({
-        side: 1,
-        widget: new PlaceholderWidget(controller, lastId, "after", { persistent:true }),
-      }).range(pos);
-      return Decoration.set([deco]);
-    }
-  }, {
-    decorations: v => v.decorations
-  });
-}
-/* end insertPlaceholder stuff - to be moved later */
 
 function elementSelector(controller) {
   return ViewPlugin.fromClass(
@@ -541,7 +617,8 @@ function elementSelector(controller) {
           const head = update.state.selection.main.head;
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
-          controller.setSelected(meta?.id ?? null);
+          // controller.setSelected(meta?.id ?? null);
+          if (meta?.id !== controller.selectedId) controller.setSelected(meta?.id ?? null);
         }
       }
     }
@@ -591,7 +668,20 @@ function elementHighlighter(controller) {
 
 const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
 
-/* DRY extension builder */
+// Misc
+function interceptEnter(controller){
+  return keymap.of([{
+    key:'Enter',
+    run(view){
+      const ln   = view.state.doc.lineAt(view.state.selection.main.head).number-1;
+      const meta = controller.lineMeta[ln];
+      if (!['action', 'transition', 'scene_heading', 'dialogue'].includes(meta?.type)) return false;
+      view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
+      return true;
+    }
+  }]);
+}
+
 export const buildExtensions = controller => [
   // logSel(controller),  // debug only
   // logCaret(),  // debug only
@@ -611,6 +701,11 @@ export const buildExtensions = controller => [
   myTheme
 ];
 
+const getElementOrder = controller => {
+  const ids = controller.elementOrder();
+  ids.push("_insert_bar_");
+  return ids;
+}
 
 /*
   Create the View
@@ -631,7 +726,7 @@ export function createEditorView({ parent, controller }) {
 
   view.dom.addEventListener('cm-cancel-insert', () => {
     view.dispatch({ effects: cancelInsert.of(null) });
-    setTimeout(() => view.focus(), 0);
+      queueMicrotask(() => view.focus());
   });
 
   view.dom.addEventListener("cm-request-insert", e => {
@@ -640,27 +735,43 @@ export function createEditorView({ parent, controller }) {
     // Update Scrypt
     const newId   = controller.createElementRelativeTo(refId, type, beforeAfter);
 
-    // Update caret/selection if a new element was added
-    if (newId) {
-      const { start } = controller.elementPositions[newId];
-      // clamp start+1 to actual doc lines
-      const totalLines = view.state.doc.lines;
-      const targetLine = Math.max(1, Math.min(start + 1, totalLines));
-      if (start + 1 !== targetLine) console.warn(`cm-request-insert: start: ${start} + 1 clamped, totalLines: ${totalLines}`)
-    }
+    // Close the insert bar right away
+    view.dispatch({ effects: cancelInsert.of(null) });
 
-    // Dispatch changes, opening edit mode on new element
+    if (newId) {
+      // Open the edit widget for the new element only after the controller/model has flushed & view has updated
+      const open = () => {
+        controller.removeEventListener("change", open);
+        view.dispatch({ effects: beginEdit.of({ id: newId }) });
+        const { start } = controller.elementPositions[newId];
+        view.dispatch({
+          selection: { anchor: view.state.doc.line(start + 1).from },
+          scrollIntoView: true
+        });
+      };
+      // do this once, after the next change event is handled
+      controller.addEventListener("change", open, { once: true });
+    }
+  });
+
+  controller.addEventListener('change', e => {
+    const { kind } = e.detail || {};
+    const newDoc = controller.text;
+
+    // Replace the document & reconfigure
     view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: controller.text },
-      effects: [
-        StateEffect.reconfigure.of(buildExtensions(controller)),
-        cancelInsert.of(null),
-        newId ? beginEdit.of({ id: newId }) : null
-      ].filter(Boolean),
+      changes: { from: 0, to: view.state.doc.length, insert: newDoc },
+      effects: [ StateEffect.reconfigure.of(buildExtensions(controller)) ]
     });
 
-    // Only refocus the editor if we didn't open a widget
-    if (!newId) setTimeout(() => view.focus(), 0);
+    // Queue positioning the cursor/selection
+    queueMicrotask(() => {
+      const pos = controller.elementPositions[controller.selectedId]?.start;
+      if (typeof pos === 'number') {
+        const anchor = view.state.doc.line(pos + 1).from;
+        view.dispatch({ selection: { anchor }, scrollIntoView: true });
+      }
+    });
   });
 
   return view

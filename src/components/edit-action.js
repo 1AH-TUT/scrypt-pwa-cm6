@@ -19,7 +19,7 @@ export class EditAction extends EditBase {
   /* DOM */
   _renderControl() {
     return html`<textarea
-        class="inputlike focus"
+        class="inputlike"
         .value=${this.value ?? ''}
         @keydown=${this._onKeydown}
         aria-label="Action description"

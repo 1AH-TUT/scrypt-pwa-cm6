@@ -62,7 +62,7 @@ export class EditDialogue extends EditBase {
       <div class="vstack" role="group" aria-label="Dialogue block">
         <!-- CHARACTER -->
         <input
-          class="inputlike char focus"
+          class="inputlike char"
           list="char-names"
           aria-label="Character name"
           .value=${this.character}

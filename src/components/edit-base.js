@@ -12,6 +12,8 @@ import { LitElement, html, css } from 'lit';
  * @fires cancel - Event on cancel.
  */
 export class EditBase extends LitElement {
+  #committed = false;
+
   static properties = { value: { type: String } };
 
   static styles = css`
@@ -26,16 +28,42 @@ export class EditBase extends LitElement {
     .invalid { border: 2px solid #e53935; }
   `;
 
+  connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener('focusout', this._maybeSaveOnWidgetBlur, true);
+  }
+  disconnectedCallback() {
+    this.removeEventListener('focusout', this._maybeSaveOnWidgetBlur, true);
+    super.disconnectedCallback();
+  }
+  _maybeSaveOnWidgetBlur = (e) => {
+    if (!this.constructor.enableBlurSave) return;
+    // If focus is still inside this widget, do nothing
+    if (this.contains(e.relatedTarget)) return;
+    // Defer the save until after the current CM6 update finishes
+    setTimeout(() => {
+      this._finish('save');
+    }, 0);
+  };
+
   /* ---------- Hooks for subclasses ---------- */
   _renderControl() { return html``; }
   _getPatch()      { return { text: this.value ?? '' }; }
   /* ------------------------------------------ */
 
-  firstUpdated()  { this.shadowRoot.querySelector('.focus')?.focus(); }
-  render()        { return this._renderControl(); }
+  firstUpdated() {
+    // Find the first focusable input/select/textarea and focus it
+    const el = this.shadowRoot.querySelector('input, select, textarea');
+    if (el) el.focus();
+  }
+
+  render() { return this._renderControl(); }
 
   /* ---------- Shared save / cancel ---------- */
   _finish(type) {
+    if (this.#committed) return; // already fired once
+    this.#committed = true;
+
     if (type === 'save') {
       const patch = this._getPatch();
       if (patch) {

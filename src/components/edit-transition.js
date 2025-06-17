@@ -31,7 +31,7 @@ export class EditTransition extends EditBase {
 
     return html`<div class="right" role="group" aria-label="Transition">
         <select
-          class="inputlike focus"
+          class="inputlike"
           aria-label="Transition type"
           @keydown=${this._onKeydown}
         >

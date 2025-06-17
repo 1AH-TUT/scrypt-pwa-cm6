@@ -16,13 +16,13 @@ export function explodeElement(el) {
       });
       break;
     default:
-      if (! el.text) {
-        console.debug('No text in element', el)
-      }
+      // if (! el.text) {
+      //   console.debug('No text in element', el)
+      // }
 
       el.text.split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
-        meta .push({id, type: el.type, field:"text", idx:i});
+        meta.push({id, type: el.type, field:"text", idx:i});
       });
   }
   return { lines, meta };
@@ -37,10 +37,12 @@ export function toLinesAndMap(json) {
 
   // Add script meta
   blank();
-  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(k => {
-    if (k in json["titlePage"]) {
-      lines.push(`${json["titlePage"][k]}`);
-      lineMap.push({ "type":`${k}`});
+  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(key => {
+    if (key in json["titlePage"]) {
+      json["titlePage"][key].split(/\r?\n/).forEach((t,i)=>{
+        lines.push(t);
+        lineMap.push({type: `${key}`, field:"text", idx:i});
+      });
       blank();
     }
   });
