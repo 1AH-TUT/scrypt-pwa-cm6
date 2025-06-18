@@ -82,7 +82,7 @@ export class EditSceneHeading extends EditBase {
         <!-- Indicator -->
         <select
           class="inputlike indicator"
-          @input=${e => (this.indicator = e.target.value)}
+          @change=${e => (this.indicator = e.target.value)}
           @keydown=${this._onKeydown}
           aria-label="Indicator (INT./EXT.)"
         >
@@ -118,16 +118,9 @@ export class EditSceneHeading extends EditBase {
 
   /* ------------ patch object ------------ */
   _getPatch() {
-    if (!this.indicator.trim() || !this.location.trim()) {
-      /* inline invalid feedback */
-      this.shadowRoot.querySelectorAll('select,input').forEach(el => {
-        if (!el.value.trim()) el.classList.add('invalid');
-      });
-      setTimeout(() =>
-        this.shadowRoot.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid')),
-        1200
-      );
-      return null;
+    // require both indicator & location non-empty
+    if (!this._validate(['select.indicator','input.location'])) {
+     return null;
     }
 
     const i = this.indicator.trim().toUpperCase();

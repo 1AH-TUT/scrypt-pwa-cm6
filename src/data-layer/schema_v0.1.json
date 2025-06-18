@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://example.com/schemata/schema_v0.2.json",
+  "$id": "https://example.com/schemata/schema_v0.3.json",
   "title": "Screenplay Scrypt JSON",
   "type": "object",
   "required": ["titlePage", "data", "metaData"],
@@ -65,7 +65,7 @@
         },
         "id": { "type": "string" },
         "text": { "type": "string" },
-        "indicator": { "type": "string", "default": "" },
+        "indicator": { "type": "string", "minLength": 3, "default": "INT." },
         "location": { "type": "string", "default": "" },
         "time": { "type": "string", "default": "" },
         "character": { "type": "string", "default": "" },
@@ -77,7 +77,8 @@
             "properties": { "type": { "const": "scene_heading" } }
           },
           "then": {
-            "required": ["indicator", "location", "time"]
+            "required": ["indicator", "location", "time"],
+            "properties": { "indicator": { "minLength": 1 } }
           }
         },
         {

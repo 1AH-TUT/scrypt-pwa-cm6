@@ -97,13 +97,8 @@ export class EditDialogue extends EditBase {
 
   /* ------------ patch object ------------ */
   _getPatch() {
-    if (!this.character.trim() || !this.text.trim()) {
-      this.shadowRoot.querySelectorAll('.char, .text').forEach(el => el.classList.add('invalid'));
-      setTimeout(() =>
-        this.shadowRoot.querySelectorAll('.invalid')
-          .forEach(el => el.classList.remove('invalid')),
-        1200
-      );
+    // require both character & text non-empty
+    if (!this._validate(['input.char','textarea.text'])) {
       return null;
     }
 
