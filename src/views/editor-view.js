@@ -143,8 +143,7 @@ class LitBlockWidget extends WidgetType {
         // Queue undo insert
         queueMicrotask(() => {
           // Yank if freshly added and user backed out
-          if (this.controller._pendingInserts.has(this.id)) {
-            this.controller._pendingInserts.delete(this.id);
+          if (this.controller.consumePendingInsert(this.id)) {
             this.controller.deleteElement(this.id, {deleteFullScene: false});
             return;
           }
@@ -158,9 +157,6 @@ class LitBlockWidget extends WidgetType {
       });
 
       el.addEventListener('save', e => {
-        // Housekeeping
-        this.controller._pendingInserts.delete(this.id);
-
         // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
 
@@ -472,12 +468,14 @@ function elementNavigator(controller) {
     // Scroll the first line (nearest)
     scrollLineAt(startPos);
 
-    // Scroll the blank line after the element,
-    if (scrollToBlank) {
-      const blankPos = doc.line(end + 2).from;
-      scrollLineAt(blankPos);
-    }
-    view.focus();
+    requestAnimationFrame(() => {
+      scrollLineAt(startPos);
+      if (scrollToBlank) {
+        const blankPos = doc.line(end + 2).from;
+        scrollLineAt(blankPos);
+      }
+      view.focus();
+    });
   };
 
   const move = dir => view => {
@@ -702,7 +700,7 @@ export const buildExtensions = controller => [
 ];
 
 const getElementOrder = controller => {
-  const ids = controller.elementOrder();
+  const ids = controller.elementOrder;
   ids.push("_insert_bar_");
   return ids;
 }

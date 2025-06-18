@@ -6,7 +6,7 @@ export default function makeEditorPage() {
   const scrypt = getCurrentScrypt();
   if (!scrypt) throw new Error("No script loaded");
 
-  const controller= new EditorController();
+  const controller= new EditorController(scrypt);
 
   /* layout wrapper with gutters */
   const wrapper   = document.createElement("div");
