@@ -8,8 +8,6 @@ import {setCurrentScriptId} from "./state/state.js";
 if (!window.__scryptPwaBooted) {
     window.__scryptPwaBooted = true;
 
-    // console.log("👂 Attaching nav listener");
-
     document.querySelector("app-sidebar").addEventListener("nav", ev => {
       // console.log("Nav event:", ev.detail);
       mountPage(ev.detail);
@@ -25,7 +23,7 @@ if (!window.__scryptPwaBooted) {
 
       setCurrentScriptId(id);
       setCurrentScrypt(s);
-      mountPage(view);               // router handles any valid view
+      mountPage(view);
     });
 
     /* initial splash */

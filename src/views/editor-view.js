@@ -20,7 +20,7 @@ import '../components/edit-dialogue.js';
 import { myTheme } from './editor-view-themes.js';
 import { oneDark } from "@codemirror/theme-one-dark";
 
-/* Debug only stuff */
+/* --- Debug only stuff --- */
 function logSel(controller){
   return ViewPlugin.fromClass(class{
     update(u){
@@ -45,7 +45,8 @@ function logCaret() {
   });
 }
 
-/* Editing Widget stuff */
+
+/* --- Editing Widget stuff --- */
 
 export const beginEdit = StateEffect.define();   // value: { id }
 export const endEdit   = StateEffect.define();   // value: null
@@ -186,7 +187,7 @@ class LitBlockWidget extends WidgetType {
   }
 }
 
-/*  Placeholder/Insert Bar */
+/* --- Placeholder/Insert Bar --- */
 
 export const beginInsert = StateEffect.define();
 
@@ -205,7 +206,7 @@ function insertPlaceholderField(controller) {
         // Remove the placeholder if cancel effect seen
         if (ef.is(cancelInsert)) return Decoration.none;
 
-        // If beginInsert, insert placeholde with the element id
+        // If beginInsert, insert placeholder with the element id
         if (ef.is(beginInsert)) {
           const { pos, id, beforeAfter } = ef.value;
           const deco = Decoration.widget({
@@ -339,7 +340,7 @@ class PlaceholderWidget extends WidgetType {
     });
 
     if (!this.persistent) {
-      // first let CodeMirror finish its internal focus dance, then grab focus for the first button.
+      // First let CodeMirror finish its internal focus dance, then grab focus for the first button.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => { wrap.querySelector('button')?.focus(); });
       });
@@ -371,7 +372,6 @@ function persistentInsertBar(controller) {
       if (view.state.doc.length === 0) {
         pos = 0;
       } else {
-        // After the last line
         pos = view.state.doc.length;
       }
       const ids = getElementOrder(controller);
@@ -388,7 +388,7 @@ function persistentInsertBar(controller) {
 }
 
 
-/* Other CM6 Extensions */
+/* --- Other CM6 Extensions --- */
 
 // Layout
 function screenplayLayout(controller) {
@@ -482,7 +482,7 @@ function elementNavigator(controller) {
   const move = dir => view => {
     const ids = getElementOrder(controller);
 
-    // What’s the element under the current selection head?
+    // Get the element currently selected
     let curId = controller.selectedId;
     if (curId == null) {
       const headLine = view.state.doc.lineAt(view.state.selection.main.head).number - 1;
@@ -539,12 +539,12 @@ function elementNavigator(controller) {
 
   const gotoFirst = view => {
     const first = getElementOrder(controller)[0];
-    gotoElement(view, first);           // scene-0 or first real element
+    gotoElement(view, first);  // scene-0 or first real element
     return true;
   };
 
   const gotoLast = view => {
-    const last = getElementOrder(controller).slice(-2)[0]; // before _insert_bar_
+    const last = getElementOrder(controller).slice(-2)[0];  // before _insert_bar_
     gotoElement(view, last);
     return true;
   };
@@ -584,18 +584,8 @@ function elementNavigator(controller) {
   const deleteCmd = makeElementDelete(controller);
 
   return keymap.of([
-    {
-      key: "Tab", run: view => {
-        if (inInsertBar()) return false;
-        return move("next")(view);
-      }
-    },
-    {
-      key: "Shift-Tab", run: view => {
-        if (inInsertBar()) return false;
-        return move("prev")(view);
-      }
-    },
+    { key: "Tab",       run: view => { if (inInsertBar()) return false; return move("next")(view); } },
+    { key: "Shift-Tab", run: view => { if (inInsertBar()) return false; return move("prev")(view); } },
     { key: "Home",      run: gotoFirst, preventDefault: true },
     { key: "End",       run: gotoLast , preventDefault: true },
     { key: "PageUp",    run: view => gotoPrevScene(view, controller), preventDefault: true },
@@ -611,12 +601,10 @@ function elementSelector(controller) {
   return ViewPlugin.fromClass(
     class {
       update(update) {
-        // Whenever the main selection moves…
         if (update.selectionSet) {
           const head = update.state.selection.main.head;
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
-          // controller.setSelected(meta?.id ?? null);
           if (meta?.id !== controller.selectedId) controller.setSelected(meta?.id ?? null);
         }
       }
@@ -648,11 +636,11 @@ function elementHighlighter(controller) {
       if (!lineNoPositions) return builder.finish();
 
       const { start, end } = lineNoPositions;
-      // iterate over the lines in the viewport, but only decorate those in [start,end]
+      // Iterate over the lines in the viewport, but only decorate those in [start,end]
       for (let { from } of view.viewportLineBlocks) {
         const ln = view.state.doc.lineAt(from).number - 1;
         if (ln < start || ln > end) continue;
-        // apply element block decoration
+        // Apply element block decoration
         const type = controller.lineMeta[ln].type;
         builder.add(from, from, Decoration.line({
           class: `cm-elt-selected cm-elt-selected-${type}`
@@ -667,7 +655,6 @@ function elementHighlighter(controller) {
 
 const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
 
-// Misc
 function interceptEnter(controller){
   return keymap.of([{
     key:'Enter',

@@ -4,9 +4,8 @@ import * as pages from "./pages/index.js";
 const slot = document.getElementById("page-slot");
 
 /**
- * Mounts one of your pages into #page-slot.
+ * Mounts a page into #page-slot.
  * @param {"splash"|"library"|"editor"} name
- * @param {number=} payload  // for editor, the script ID
  */
 export function mountPage(name) {
   console.debug("Mounting Page:", name);
@@ -22,7 +21,7 @@ export function mountPage(name) {
       pageEl = pages.library();
       break;
 
-    default:  // "splash" or anything else
+    default:
       pageEl = pages.splash();
       break;
   }
