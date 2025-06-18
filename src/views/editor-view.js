@@ -296,6 +296,19 @@ class PlaceholderWidget extends WidgetType {
         return;
       }
 
+      // If single letter (not combined with ctrl/alt/meta/shift)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.length === 1) {
+        const k = e.key.toUpperCase();
+        for (const info of types) {
+          if (keyForType[info.type] === k) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.insertElement(info.type, wrap);
+            return;
+          }
+        }
+      }
+
       if (this.persistent) return;
 
       // Tab / Shift+Tab at ends cancels, otherwise moves between buttons
@@ -323,18 +336,6 @@ class PlaceholderWidget extends WidgetType {
         wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
       }
 
-      // If single letter (not combined with ctrl/alt/meta/shift)
-      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.length === 1) {
-        const k = e.key.toUpperCase();
-        for (const info of types) {
-          if (keyForType[info.type] === k) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.insertElement(info.type, wrap);
-            return;
-          }
-        }
-      }
     });
 
     if (!this.persistent) {
