@@ -713,15 +713,29 @@ const getElementOrder = controller => {
 export function createEditorView({ parent, controller }) {
   if (!controller) throw new Error("createEditorView: controller missing");
 
+  // Figure out where we want the cursor
+  let initialSelection;
+  if (controller.selectedId) {
+    const { start } = controller.elementPositions[controller.selectedId];
+    const pos = controller.text
+      .split("\n")
+      .slice(0, start + 1)
+      .reduce((sum, line) => sum + line.length + 1, 0) - 1;
+    initialSelection = { anchor: pos };
+  }
+
   const state = EditorState.create({
     doc: controller.text,
+    selection: initialSelection,
     extensions: buildExtensions(controller)
   });
 
   const view = new EditorView({ parent, state });
   // Make the outer editor node focusable & grab focus
   view.dom.tabIndex = 0;
-  view.focus();
+  requestAnimationFrame(() => view.focus());
+
+  /* --- Event listeners --- */
 
   view.dom.addEventListener('cm-cancel-insert', () => {
     view.dispatch({ effects: cancelInsert.of(null) });
