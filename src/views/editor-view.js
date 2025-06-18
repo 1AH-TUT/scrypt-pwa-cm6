@@ -158,6 +158,9 @@ class LitBlockWidget extends WidgetType {
       });
 
       el.addEventListener('save', e => {
+        // Clear Pending status
+        this.controller.consumePendingInsert(this.id);
+
         // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
 
@@ -605,7 +608,10 @@ function elementSelector(controller) {
           const head = update.state.selection.main.head;
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
-          if (meta?.id !== controller.selectedId) controller.setSelected(meta?.id ?? null);
+          // meta may be null if we were passed a blank line... safe to not set
+          if (meta?.id != null && meta?.id !== controller.selectedId) {
+            controller.setSelected(meta.id);
+          }
         }
       }
     }
