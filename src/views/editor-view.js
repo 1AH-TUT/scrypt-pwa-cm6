@@ -143,8 +143,7 @@ class LitBlockWidget extends WidgetType {
         // Queue undo insert
         queueMicrotask(() => {
           // Yank if freshly added and user backed out
-          if (this.controller._pendingInserts.has(this.id)) {
-            this.controller._pendingInserts.delete(this.id);
+          if (this.controller.consumePendingInsert(this.id)) {
             this.controller.deleteElement(this.id, {deleteFullScene: false});
             return;
           }
@@ -158,9 +157,6 @@ class LitBlockWidget extends WidgetType {
       });
 
       el.addEventListener('save', e => {
-        // Housekeeping
-        this.controller._pendingInserts.delete(this.id);
-
         // Update data model
         this.controller.scrypt.updateElement(this.id, e.detail);
 
@@ -300,6 +296,19 @@ class PlaceholderWidget extends WidgetType {
         return;
       }
 
+      // If single letter (not combined with ctrl/alt/meta/shift)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.length === 1) {
+        const k = e.key.toUpperCase();
+        for (const info of types) {
+          if (keyForType[info.type] === k) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.insertElement(info.type, wrap);
+            return;
+          }
+        }
+      }
+
       if (this.persistent) return;
 
       // Tab / Shift+Tab at ends cancels, otherwise moves between buttons
@@ -327,18 +336,6 @@ class PlaceholderWidget extends WidgetType {
         wrap.dispatchEvent(new CustomEvent('cm-cancel-insert', { bubbles: true }));
       }
 
-      // If single letter (not combined with ctrl/alt/meta/shift)
-      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.length === 1) {
-        const k = e.key.toUpperCase();
-        for (const info of types) {
-          if (keyForType[info.type] === k) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.insertElement(info.type, wrap);
-            return;
-          }
-        }
-      }
     });
 
     if (!this.persistent) {
@@ -472,12 +469,14 @@ function elementNavigator(controller) {
     // Scroll the first line (nearest)
     scrollLineAt(startPos);
 
-    // Scroll the blank line after the element,
-    if (scrollToBlank) {
-      const blankPos = doc.line(end + 2).from;
-      scrollLineAt(blankPos);
-    }
-    view.focus();
+    requestAnimationFrame(() => {
+      scrollLineAt(startPos);
+      if (scrollToBlank) {
+        const blankPos = doc.line(end + 2).from;
+        scrollLineAt(blankPos);
+      }
+      view.focus();
+    });
   };
 
   const move = dir => view => {
@@ -702,7 +701,7 @@ export const buildExtensions = controller => [
 ];
 
 const getElementOrder = controller => {
-  const ids = controller.elementOrder();
+  const ids = controller.elementOrder;
   ids.push("_insert_bar_");
   return ids;
 }
@@ -714,15 +713,29 @@ const getElementOrder = controller => {
 export function createEditorView({ parent, controller }) {
   if (!controller) throw new Error("createEditorView: controller missing");
 
+  // Figure out where we want the cursor
+  let initialSelection;
+  if (controller.selectedId) {
+    const { start } = controller.elementPositions[controller.selectedId];
+    const pos = controller.text
+      .split("\n")
+      .slice(0, start + 1)
+      .reduce((sum, line) => sum + line.length + 1, 0) - 1;
+    initialSelection = { anchor: pos };
+  }
+
   const state = EditorState.create({
     doc: controller.text,
+    selection: initialSelection,
     extensions: buildExtensions(controller)
   });
 
   const view = new EditorView({ parent, state });
   // Make the outer editor node focusable & grab focus
   view.dom.tabIndex = 0;
-  view.focus();
+  requestAnimationFrame(() => view.focus());
+
+  /* --- Event listeners --- */
 
   view.dom.addEventListener('cm-cancel-insert', () => {
     view.dispatch({ effects: cancelInsert.of(null) });

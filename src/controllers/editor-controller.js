@@ -1,105 +1,109 @@
 import { toLinesAndMap } from "../scrypt/element-utils.js";
-import { getCurrentScrypt } from "../state/current-scrypt.js";
 
 export class EditorController extends EventTarget {
-  constructor() {
+  #elementOrder = [];
+  #elementPositions = {};
+  #isDirty = false;
+  #flushQueued = false;
+  #selectedId = null
+  #pendingDetails = [];
+  #pendingInserts = new Set();
+
+  constructor(script) {
     super();
 
-    this.scrypt = getCurrentScrypt();
-    const {lines, lineMap} = toLinesAndMap(this.scrypt);
-    this.lines = lines;
-    this.lineMeta = lineMap
-    this.selectedId = null;
-    this.elementPositions = {};
+    this.scrypt = script;
+    ({ lines: this.lines, lineMap: this.lineMeta } = toLinesAndMap(this.scrypt));
 
-    this._pendingDetails = [];
-    this._pendingInserts = new Set();
-    this._recomputeElementPositions();
-    this._dirty = false;
+    // Build the indexes
+    this.reindex();
 
-    // listen to all model changes
+    // Listen to all model changes
     this.scrypt.addEventListener("change", e => {
-      this._dirty = true;
-      this._pendingDetails.push(e.detail);
-      queueMicrotask(() => this._flush());
+      this.#isDirty = true;
+      this.#pendingDetails.push(e.detail);
+      if (!this.#flushQueued) {
+        this.#flushQueued = true;
+        queueMicrotask(() => { this.#flushQueued = false; this._flush(); });
+      }
     });
   }
 
-  _flush() {
-    console.debug('EditorController._flush', this._dirty, this._pendingDetails)
-
-    if (!this._dirty) return;
-    this._dirty = false;
-
-    this.reindex();
-    // _pendingDetails for future expansion, process here
-    this._pendingDetails = [];
-
-    this.dispatchEvent(new CustomEvent("change", {
-      detail: {
-        selectedId: this.selectedId,
-        // surface whatever else the view might want from _pendingDetails
-      }
-    }));
-  }
-
-  _recomputeElementPositions() {
-    this.elementPositions = {};
+  /** Rebuild order and positions */
+  _recomputeIndexes() {
+    this.#elementOrder = [];
+    this.#elementPositions = {};
 
     this.lineMeta.forEach((m, idx) => {
       if (m && m.id != null) {
-        if (!this.elementPositions[m.id]) {
-          this.elementPositions[m.id] = {start: idx, end: idx};
+        if (!this.#elementPositions[m.id]) {
+          this.#elementOrder.push(m.id);
+          this.#elementPositions[m.id] = { start: idx, end: idx };
         } else {
-          this.elementPositions[m.id].end = idx;
+          this.#elementPositions[m.id].end = idx;
         }
       }
     });
+
+    // if we have no selectedId, default to first scene_heading
+    if (!this.#selectedId) {
+      this.#selectedId = this.elementOrder.find(id => {
+        const meta = this.lineMeta[this.#elementPositions[id].start];
+        return meta.type === 'scene_heading';
+      }) ?? null;
+    }
   }
 
-  get text() {
-    return this.lines.join("\n");
-  }
-
-  setSelected(id) {
-    // console.log("selectedId:", id)
-    this.selectedId = id;
-  }
+  // --- Getters & Setters ---
 
   /** Unique element IDs in document order */
-  elementOrder() {
-    const ids = [...new Set(this.lineMeta
-      .filter(m => m && m.id != null)
-      .map(m => m.id))];
-    return ids;
+  get elementOrder() { return [...this.#elementOrder]; }
+  get elementPositions() { return { ...this.#elementPositions }; }
+
+  getElementPosition(id) {
+    return Object.fromEntries( Object.entries(this.#elementPositions).map(([id, pos]) => [id, {...pos}]) );
+  }
+
+  get text() { return this.lines.join("\n"); }
+  get selectedId() { return this.#selectedId; }
+  setSelected(id) {
+    this.#selectedId = id;
+  }
+
+  // --- Methods ---
+
+  /**
+   * Returns true if this element was just inserted and not yet committed,
+   * and removes it from the pending set.
+   */
+  consumePendingInsert(id) {
+    if (this.#pendingInserts.has(id)) {
+      this.#pendingInserts.delete(id);
+      return true;
+    }
+    return false;
   }
 
   /** Rebuild lines + maps after a JSON mutation */
   reindex() {
-    console.debug('EditorController reindex')
+    console.debug('EditorController reindex');
     const {lines, lineMap} = toLinesAndMap(this.scrypt);
     this.lines = lines;
     this.lineMeta = lineMap;
-
-    // Recompute elementPositions
-    this._recomputeElementPositions();
+    this._recomputeIndexes();
   }
 
+  _flush() {
+    console.debug('EditorController._flush', this.#isDirty, this.#pendingDetails);
 
-  createElementRelativeTo(refId, type, beforeAfter = 'after', initialData = {}) {
-    console.debug(`createElementRelativeTo called, refId: ${refId}, type: ${type}, beforeAfter: ${beforeAfter}`)
+    if (!this.#isDirty) return;
+    this.#isDirty = false;
 
-    const meta = this.lineMeta.find(m => m && m.id === refId);
-    if (!meta) return null;
-    const {sceneNo, elementNo} = meta;
-    const newId = this.scrypt.addElement(type, sceneNo, elementNo, beforeAfter, initialData);
-    if (newId != null) {
-      this._pendingInserts.add(newId);
-      this.setSelected(newId);
-      return newId;
-    }
-    console.warn(`createElementRelativeTo failed, refId: ${refId}, type: ${type}, beforeAfter: ${beforeAfter} - returning null`)
-    return null;
+    this.reindex();
+    this.#pendingDetails = [];
+    this.dispatchEvent(new CustomEvent("change", {
+      detail: { selectedId: this.#selectedId }
+    }));
   }
 
   getNextSceneHeadingId(currentElementId) {
@@ -132,10 +136,10 @@ export class EditorController extends EventTarget {
 
   /**
    * Delete an element by ID, with optional full scene removal for scene headings.
-   * Returns new selected element id (or null if nothing left).
+   * Returns a new selected element id (or null if nothing left).
    */
   deleteElement(refId, { deleteFullScene = false } = {}) {
-    const orderBefore = this.elementOrder();
+    const orderBefore = this.elementOrder;
     const idx = orderBefore.indexOf(refId);
 
     // Pick next or previous before we mutate
@@ -144,8 +148,8 @@ export class EditorController extends EventTarget {
 
     if (!this.scrypt.removeElement(refId, { deleteFullScene })) return null;
 
-    // Find candidate in new order
-    const orderAfter = this.elementOrder();
+    // Find the candidate in new order
+    const orderAfter = this.elementOrder;
     let selectedId = nextId && orderAfter.includes(nextId) ? nextId :
                      prevId && orderAfter.includes(prevId) ? prevId :
                      orderAfter[0] || null;
@@ -153,5 +157,25 @@ export class EditorController extends EventTarget {
     this.setSelected(selectedId);
     return selectedId;
   }
+
+  /**
+   * Inserts a new element of `type` before/After element `refId`
+   */
+  createElementRelativeTo(refId, type, beforeAfter = 'after', initialData = {}) {
+    console.debug(`createElementRelativeTo called, refId: ${refId}, type: ${type}, beforeAfter: ${beforeAfter}`);
+
+    const meta = this.lineMeta.find(m => m && m.id === refId);
+    if (!meta) return null;
+    const {sceneNo, elementNo} = meta;
+    const newId = this.scrypt.addElement(type, sceneNo, elementNo, beforeAfter, initialData);
+    if (newId != null) {
+      this.#pendingInserts.add(newId);
+      this.setSelected(newId);
+      return newId;
+    }
+    console.warn(`createElementRelativeTo failed, refId: ${refId}, type: ${type}, beforeAfter: ${beforeAfter} - returning null`);
+    return null;
+  }
+
 
 }
