@@ -3,6 +3,12 @@ import { html, css } from 'lit';
 import { EditBase }   from './edit-base.js';
 
 export class EditTitleContact extends EditBase {
+
+  constructor(){
+    super();
+    this.required = false;
+  }
+
   static styles = [
     EditBase.styles,
     css`
@@ -28,8 +34,8 @@ export class EditTitleContact extends EditBase {
     `;
   }
   _getPatch(){
-    if(this.required && !this._validate(['input.title-input'])) return null;
-    return { field:'contact', text:this.shadowRoot.querySelector('textarea').value.trim() };
+    if(this.required && !this._validate(['textarea.title-input'])) return null;
+    return { field: this.field, text:this.shadowRoot.querySelector('textarea').value.trim() };
   }
 }
 customElements.define('edit-title-contact', EditTitleContact);
