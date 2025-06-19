@@ -1,7 +1,7 @@
 // src/router.js
 import * as pages from "./pages/index.js";
 
-const slot = document.getElementById("page-slot");
+const slot = document.getElementById("view-slot");
 
 /**
  * Mounts a page into #page-slot.

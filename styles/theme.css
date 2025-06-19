@@ -56,12 +56,7 @@
   --bg-editor:      #282c34;
   --fg-editor:      #abb2bf;
 
-  /* Base UI typography (used across menus, dialogs, buttons) */
-  /*--font-family:    "Inter", system-ui, sans-serif;*/
-  /*--font-size-base: 16px;*/
-  /*--line-height:    1.4;*/
-
-  /* Screenplay editor typography */
+    /* Screenplay editor typography */
   --font-screenplay: "Courier Prime", Courier, monospace;
   --font-ui:         "Courier Prime Sans", "Courier Prime", monospace;
   --font-size-screenplay: 12pt;
@@ -73,11 +68,11 @@
   --header-padding: 0.5rem 1rem;
 
   /* sidebar */
-  --sidebar-bg:           #1e1e1e;
-  --sidebar-fg:           #ccc;
-  --sidebar-width:        220px;
-  --sidebar-width-closed: 56px;
-  --transition-ease:      0.2s ease;
+  --app-sidebar-bg:           #1e1e1e;
+  --app-sidebar-fg:           #ccc;
+  --app-sidebar-width:        220px;
+  --app-sidebar-width-closed: 56px;
+  --app-sidebar-transition-ease:      0.2s ease;
 
   /* main content */
   --editor-height:     100%;
@@ -91,8 +86,8 @@ body.dark {
   --fg-page:         #ddd;
   --bg-header:       #222;
   --header-border:   1px solid #444;
-  --sidebar-bg:      #222;
-  --sidebar-fg:      #ddd;
+  --app-sidebar-bg:      #222;
+  --app-sidebar-fg:      #ddd;
 }
 
 /* Light‐mode overrides */
@@ -102,8 +97,8 @@ body.light {
   --fg-page:         #222;
   --bg-header:       #eee;
   --header-border:   1px solid #ccc;
-  --sidebar-bg:      #f5f5f5;
-  --sidebar-fg:      #333;
+  --app-sidebar-bg:      #f5f5f5;
+  --app-sidebar-fg:      #333;
 }
 */
 
@@ -111,11 +106,10 @@ body.light {
 /* 2. Base defaults for html, body                                        */
 /*───────────────────────────────────────────────────────────────────────*/
 /* Root fill */
-html,body { height:100%; margin:0; }
+html, body, #app-shell { height: 100%; margin: 0; }
 
 /* App-shell grid: top-bar + rest */
 #app-shell {
-  height:100%;
   display:grid;
   grid-template-rows: 3rem 1fr;   /* 3rem top-bar, rest fills */
   background-color: var(--bg-page);
@@ -129,55 +123,84 @@ html,body { height:100%; margin:0; }
   background:var(--bg-header); color:var(--fg-page);
 }
 
-/* Two-column grid for sidebar + main */
-#content-grid {
+/* Three-columns inside the body row */
+#body-grid {
   display:grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   height:100%;
+  overflow-x: hidden;
 }
 
-/* Sidebar always full height, sticky so it never scrolls */
-app-sidebar#sidebar-left {
-  position:sticky; top:0;
-  height:100vh;
-}
+#sidebar-left[hidden],
+#sidebar-right[hidden] { display: none; }
 
-/* Main page slot scrolls if content taller than viewport */
-#page-slot {
+
+/* main view area never scrolls – individual views manage scrolling */
+#view-slot {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   height: 100%;
-  overflow:auto;
 }
 
-/* Editor page inner layout (3 columns) */
-.editor-page {
-  display:grid;
-  grid-template-columns: 1fr auto 1fr;   /* gutters – centre auto width */
-  padding:0 1rem;       /* side padding so gutters never hit edge */
+
+.editor-root,
+.cm-wrapper,
+.cm-editor {          /* cm-editor is CodeMirror’s outer node */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;      /* important: allow children to scroll */
 }
 
-.editor-centre {
-  max-width:8.5in;      /* screenplay width cap */
-  width:100%;
-  font-size: var(--font-size-screenplay);
+/* .cm-wrapper provides the viewport */
+.cm-wrapper { overflow: auto; }
+
+/* centre a “page” of 8.5 in inside the viewport */
+.cm-editor {
+  padding: 0 1in;              /* gutters left & right    */
+  box-sizing: border-box;
+  max-width: 8.5in;
+  margin: 0 auto;              /* horizontally centred    */
 }
 
-/*────────────────────────────────────────────────────────────────────────*/
-/* 3. Pages                                                              */
-/*──────────────────────────────────────────────────────────────────────*/
-
-#content-grid:has(#page-slot > .editor-page) {
-  background: var(--bg-editor);
-  color:      var(--fg-editor);
+/* CodeMirror’s own scroller becomes the true scrollDOM */
+.cm-scroller {
+  flex: 1 1 auto;              /* fills .cm-wrapper */
+  overflow: auto;              /* single scrollbar   */
+  min-height: 0;               /* allow overflow     */
 }
 
-/*────────────────────────────────────────────────────────────────────────*/
-/* 4. Utility classes                                                    */
-/*──────────────────────────────────────────────────────────────────────*/
-
-.hidden {
-  display: none !important;
-}
-
-/**:focus {*/
-/*  outline: 2px solid cyan;*/
+/*!* Editor page inner layout (3 columns) *!*/
+/*.editor-page {*/
+/*  display:grid;*/
+/*  grid-template-columns: 1fr auto 1fr;   !* gutters – centre auto width *!*/
+/*  padding:0 1rem;       !* side padding so gutters never hit edge *!*/
 /*}*/
+
+/*.editor-centre {*/
+/*  max-width:8.5in;      !* screenplay width cap *!*/
+/*  width:100%;*/
+/*  font-size: var(--font-size-screenplay);*/
+/*}*/
+
+/*!*────────────────────────────────────────────────────────────────────────*!*/
+/*!* 3. Pages                                                              *!*/
+/*!*──────────────────────────────────────────────────────────────────────*!*/
+
+/*#content-grid:has(#page-slot > .editor-page) {*/
+/*  background: var(--bg-editor);*/
+/*  color:      var(--fg-editor);*/
+/*}*/
+
+/*!*────────────────────────────────────────────────────────────────────────*!*/
+/*!* 4. Utility classes                                                    *!*/
+/*!*──────────────────────────────────────────────────────────────────────*!*/
+
+/*.hidden {*/
+/*  display: none !important;*/
+/*}*/
+
+/*!**:focus {*!*/
+/*!*  outline: 2px solid cyan;*!*/
+/*!*}*!*/

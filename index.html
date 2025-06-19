@@ -14,12 +14,14 @@
   <script async crossorigin="anonymous" src="https://ga.jspm.io/npm:es-module-shims@2.6.0/dist/es-module-shims.js"></script>
 </head>
 <body>
-  <div id="app-shell">
+  <div id="app-shell">                                 <!-- grid: header + body -->
     <header id="top-bar">Scrypt CM6 demo</header>
-
-    <div id="content-grid">
-      <app-sidebar id="sidebar-left"></app-sidebar>   <!-- left column -->
-      <main id="page-slot"></main>                    <!-- scrollable area -->
+    <div id="body-grid">                               <!-- grid: (L)sidebar | centre | (R)sidebar -->
+      <aside id="sidebar-left">                        <!-- left column -->
+        <app-sidebar></app-sidebar>
+      </aside>
+      <main  id="view-slot"></main>                    <!-- scrollable area -->
+      <aside id="sidebar-right" hidden></aside>        <!-- right column -->
     </div>
   </div>
 
