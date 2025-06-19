@@ -437,6 +437,14 @@ function screenplayLayout(controller) {
         const meta = controller.lineMeta[ln];
         if (!meta) continue;
 
+        // Add margin label if line has a label
+        if (meta.label) {
+          b.add(from, from, Decoration.line({
+            class: "cm-title-label",
+            attributes: { "data-label": meta.label }
+          }));
+        }
+
         const CLASS_BY_TYPE = {
           transition: "cm-transition",
           scene_heading: "cm-heading",

@@ -30,6 +30,7 @@ export function toLinesAndMap(json) {
 
   const blank = () => { lines.push(""); lineMap.push(null); }
   const newPage = () => { lines.push(""); lineMap.push({"type": "page_break"}); }
+  const capitalizeFirst = (str) => { if (!str) return str; return str.charAt(0).toUpperCase() + str.slice(1); }
 
   // Add script meta
   blank();
@@ -37,8 +38,9 @@ export function toLinesAndMap(json) {
     if (key in json["titlePage"]) {
       json["titlePage"][key].split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
-        // lineMap.push({type: `${key}`, field:"text", idx:i});
-        lineMap.push({ id:`tp_${key}`, type:key, field:'text', idx:i});
+        const data = { id:`tp_${key}`, type:key, field:'text', idx:i }
+        if (i===0) data['label'] = `${capitalizeFirst(key)}:`;
+        lineMap.push(data);
       });
       blank();
     }

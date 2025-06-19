@@ -42,4 +42,8 @@ export const myTheme = EditorView.baseTheme({
   ".cm-insert-btn-transition:focus, .cm-insert-btn-transition:hover": { outline: "2px solid #ff69b4", borderColor: "#ff69b4" },
   "edit-title-input, edit-title-contact": { fontFamily: "var(--font-screenplay, 'Courier Prime', monospace)",
                                             fontSize: "var(--font-size-screenplay, 12pt)" },
+  ".cm-title-label.cm-line:hover::before,.cm-title-label.cm-elt-selected::before":  {
+    content: 'attr(data-label)', position: "absolute", left: "0", width: "1.2in", opacity: "0.9", textAlign: "right", color: "#bbb",
+    fontSize: "smaller", fontStyle: "italic", fontWeight: "normal", textTransform: "none", pointerEvents: "none", whiteSpace: "nowrap",
+    marginTop: "0.2em" },
 });
