@@ -65,6 +65,7 @@
   --font-screenplay: "Courier Prime", Courier, monospace;
   --font-ui:         "Courier Prime Sans", "Courier Prime", monospace;
   --font-size-screenplay: 12pt;
+  --font-size-screenplay-title: 16pt;
 
   /* header */
   --bg-header:      #1e1e1e;

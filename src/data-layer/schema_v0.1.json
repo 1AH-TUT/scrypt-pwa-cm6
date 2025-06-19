@@ -8,11 +8,11 @@
     "id": { "type": "integer", "minimum": 0 },
     "titlePage": {
       "type": "object",
-      "required": ["title", "byline", "date"],
+      "required": ["title", "byline"],
       "properties": {
         "title": { "type": "string" },
         "byline": { "type": "string" },
-        "date": { "type": "string" },
+        "date": { "type": "string", "default": "" },
         "source": { "type": "string", "default": "" },
         "copyright": { "type": "string", "default": "" },
         "contact": { "type": "string", "default": "" }

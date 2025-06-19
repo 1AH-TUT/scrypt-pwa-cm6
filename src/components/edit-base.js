@@ -14,7 +14,10 @@ import { LitElement, html, css } from 'lit';
 export class EditBase extends LitElement {
   #committed = false;
 
-  static properties = { value: { type: String } };
+  static properties = {
+    value: { type: String },
+    placeholder:  { type:String },
+  };
 
   static styles = css`
     :host { display: block; }

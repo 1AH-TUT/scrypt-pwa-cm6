@@ -70,6 +70,11 @@ export class Scrypt extends EventTarget {
       const el = scene.elements.find(e => e.id === id);
       if (el) return el;
     }
+    // handle title elements
+    if (id.startsWith('tp_')) {
+      const field = id.slice(3);
+      return { type: "titlePage", text: this.titlePage[field] };
+    }
     return null;
   }
 
@@ -243,4 +248,13 @@ export class Scrypt extends EventTarget {
     }
   }
 
+    updateTitlePageField(field, text){
+      if(!(field in this.titlePage)) return;
+      const old = this.titlePage[field];
+      this.titlePage[field] = text;
+      this._markDirty();
+      this.dispatchEvent(new CustomEvent('change',{
+        detail:{ kind:'titlepage', field, old, new:text }
+      }));
+    }
 }

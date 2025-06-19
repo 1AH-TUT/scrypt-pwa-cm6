@@ -37,7 +37,8 @@ export function toLinesAndMap(json) {
     if (key in json["titlePage"]) {
       json["titlePage"][key].split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
-        lineMap.push({type: `${key}`, field:"text", idx:i});
+        // lineMap.push({type: `${key}`, field:"text", idx:i});
+        lineMap.push({ id:`tp_${key}`, type:key, field:'text', idx:i});
       });
       blank();
     }

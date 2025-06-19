@@ -12,6 +12,8 @@ import '../components/edit-action.js';
 import '../components/edit-transition.js';
 import '../components/edit-scene-heading.js'
 import '../components/edit-dialogue.js';
+import '../components/edit-title-input.js';
+import '../components/edit-title-contact.js';
 
 /*
   CSS lives here
@@ -132,6 +134,27 @@ class LitBlockWidget extends WidgetType {
       el.character     = elObj.character     || '';
       el.parenthetical = elObj.parenthetical || '';
       el.text          = elObj.text          || '';
+    } else if (elObj.type === 'titlePage') {
+      const field = this.id.slice(3);
+      const value = elObj.text;
+      if (field === 'contact') {
+        el = document.createElement('edit-title-contact');
+        el.field = 'contact';
+        el.value = value;
+        el.required = false;
+        el.placeholder = "Contact details";
+      } else {
+        el = document.createElement('edit-title-input');
+        el.field = field;
+        el.value = value;
+        el.align = (field === 'date' || field === 'contact') ? 'right' : (field === 'copyright') ? 'left' : 'center';
+        el.required = (field === 'title' || field === 'byline');
+        if (field === 'title')       el.placeholder = "Screenplay Title (required)";
+        else if (field === 'byline')  el.placeholder = "Byline — e.g. Written by [Name], Draft Note, or Director Credit (required)";
+        else if (field === 'source')  el.placeholder = "Adapted from (novel, play, true events), Original Story, or Additional Note";
+        else if (field === 'copyright') el.placeholder = "Copyright notice — e.g. © Year Name or Production Company";
+        else if (field === 'date') el.placeholder = "Date — e.g., 1 Jan 2024";
+      }
     }
 
     if (el){
@@ -162,7 +185,13 @@ class LitBlockWidget extends WidgetType {
         this.controller.consumePendingInsert(this.id);
 
         // Update data model
-        this.controller.scrypt.updateElement(this.id, e.detail);
+        // this.controller.scrypt.updateElement(this.id, e.detail);
+        if (this.id.startsWith('tp_')) {
+          const { field, text } = e.detail;
+          this.controller.scrypt.updateTitlePageField(field, text);
+        } else {
+          this.controller.scrypt.updateElement(this.id, e.detail);
+        }
 
         // Immediately close the widget
         view.dispatch({ effects: endEdit.of(null) });
@@ -665,9 +694,12 @@ function interceptEnter(controller){
   return keymap.of([{
     key:'Enter',
     run(view){
-      const ln   = view.state.doc.lineAt(view.state.selection.main.head).number-1;
+      const ln= view.state.doc.lineAt(view.state.selection.main.head).number-1;
       const meta = controller.lineMeta[ln];
-      if (!['action', 'transition', 'scene_heading', 'dialogue'].includes(meta?.type)) return false;
+      const toIntercept = ['action', 'transition', 'scene_heading', 'dialogue', 'title','byline','date','source','copyright','contact'];
+      if (!toIntercept.includes(meta?.type)) {
+        return false;
+      }
       view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
       return true;
     }

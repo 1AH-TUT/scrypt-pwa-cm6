@@ -40,4 +40,6 @@ export const myTheme = EditorView.baseTheme({
   ".cm-insert-btn-dialogue:focus, .cm-insert-btn-dialogue:hover": { outline: "2px solid #ffa600", borderColor: "#ffa600" },
   ".cm-insert-btn-scene_heading:focus, .cm-insert-btn-scene_heading:hover": { outline: "2px solid #32cd32", borderColor: "#32cd32" },
   ".cm-insert-btn-transition:focus, .cm-insert-btn-transition:hover": { outline: "2px solid #ff69b4", borderColor: "#ff69b4" },
+  "edit-title-input, edit-title-contact": { fontFamily: "var(--font-screenplay, 'Courier Prime', monospace)",
+                                            fontSize: "var(--font-size-screenplay, 12pt)" },
 });

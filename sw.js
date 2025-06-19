@@ -16,6 +16,8 @@ const ASSETS = [
   'src/components/edit-transition.js',
   'src/components/edit-scene-heading.js',
   'src/components/edit-dialogue.js',
+  'src/components/edit-title-input.js',
+  'src/components/edit-title-contact.js',
 
   // Controllers
   'src/controllers/editor-controller.js',
