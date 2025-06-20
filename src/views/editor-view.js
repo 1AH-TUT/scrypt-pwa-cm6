@@ -784,6 +784,24 @@ export function createEditorView({ parent, controller }) {
     }
   });
 
+  view.dom.addEventListener('dblclick', e => {
+    const cmPos = view.posAtDOM(e.target, 0);
+    if (cmPos == null) return;
+
+    // Find the line that was double-clicked
+    const line = view.state.doc.lineAt(cmPos).number - 1;
+    const meta = controller.lineMeta[line];
+    if (!meta?.id) return;
+
+    const editableTypes = [
+      'action', 'transition', 'scene_heading', 'dialogue',
+      'title', 'byline', 'date', 'source', 'copyright', 'contact'
+    ];
+    if (!editableTypes.includes(meta.type)) return;
+
+    view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
+  });
+
   controller.addEventListener('change', e => {
     const { kind } = e.detail || {};
     const newDoc = controller.text;
