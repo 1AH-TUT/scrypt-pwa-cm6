@@ -58,8 +58,7 @@ export class EditDialogue extends EditBase {
   _renderControl() {
     const opt = (v, sel) => html`<option value=${v} ?selected=${sel}>${v}</option>`;
 
-    return html`
-      <div class="vstack" role="group" aria-label="Dialogue block">
+    return html`<div class="vstack" role="group" aria-label="Dialogue block">
         <!-- CHARACTER -->
         <input
           class="inputlike char"
@@ -91,8 +90,7 @@ export class EditDialogue extends EditBase {
           @input=${e => (this.text = e.target.value)}
           @keydown=${this._onKeydown}
         ></textarea>
-      </div>
-    `;
+      </div>`;
   }
 
   /* ------------ patch object ------------ */

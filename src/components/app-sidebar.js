@@ -70,8 +70,7 @@ export class AppSidebar extends LitElement {
   #go(page) { this.dispatchEvent(new CustomEvent("nav", { detail: page, bubbles: true, composed: true })) }
 
   render() {
-    return html`
-      <header>
+    return html`<header>
         <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}>☰</button>
       </header>
       <nav>

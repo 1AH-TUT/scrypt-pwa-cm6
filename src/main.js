@@ -27,5 +27,21 @@ if (!window.__scryptPwaBooted) {
     });
 
     /* initial splash */
-    mountPage("splash");
+    mountPage("library");
+
+    /* debug dump cache version */
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data.type === 'CACHE_VERSION') {
+              console.log('Cache version from SW:', event.data.value);
+            }
+          });
+
+        navigator.serviceWorker.controller.postMessage('GET_CACHE_VERSION');
+      }
+    });
+  }
+
 }

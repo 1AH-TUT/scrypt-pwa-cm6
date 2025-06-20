@@ -23,15 +23,13 @@ export class EditTitleContact extends EditBase {
 };
 
   _renderControl(){
-    return html`
-      <textarea
+    return html`<textarea
         class="inputlike contact-area"
         .value=${this.value ?? ''}
         @keydown=${this._onKeydown}
         placeholder=${this.placeholder ?? ''}
         aria-label="contact information"
-      ></textarea>
-    `;
+      ></textarea>`;
   }
   _getPatch(){
     if(this.required && !this._validate(['textarea.title-input'])) return null;

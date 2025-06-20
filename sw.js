@@ -1,5 +1,5 @@
-const CACHE = 'cm6-v1.011';
-const ASSETS = [
+const CACHE_VERSION = 'v1.012';
+const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'index.html',
   'manifest.webmanifest',
   'importmap.js',
@@ -79,6 +79,7 @@ self.addEventListener('activate', evt => {
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
   );
+  console.debug('[ServiceWorker] Activated! Cache version:', CACHE_VERSION);
   self.clients.claim();
 });
 
@@ -107,4 +108,11 @@ self.addEventListener('fetch', evt => {
   evt.respondWith(
     caches.match(request).then(cached => cached || fetch(request))
   );
+});
+
+// App communication
+self.addEventListener('message', event => {
+  if (event.data === 'GET_CACHE_VERSION') {
+    event.source.postMessage({ type: 'CACHE_VERSION', value: CACHE_VERSION });
+  }
 });
