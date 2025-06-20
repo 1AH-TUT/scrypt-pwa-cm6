@@ -1,5 +1,5 @@
 /*──────────────────────────────────────────────────────*/
-/* Courier Prime (Serif)                               */
+/* Courier Prime                                       */
 /*────────────────────────────────────────────────────*/
 @font-face {
   font-family: "Courier Prime";
@@ -23,7 +23,7 @@
 }
 
 /*─────────────────────────────────────────────────────────*/
-/* Courier Prime Sans (Serif) – TTF for now - TODO: WOFF2 */
+/* Courier Prime Sans                                     */
 /*───────────────────────────────────────────────────────*/
 @font-face {
   font-family: "Courier Prime Sans";
@@ -56,11 +56,11 @@
   --bg-editor:      #282c34;
   --fg-editor:      #abb2bf;
 
-    /* Screenplay editor typography */
+  /* Screenplay editor typography */
   --font-screenplay: "Courier Prime", Courier, monospace;
   --font-ui:         "Courier Prime Sans", "Courier Prime", monospace;
   --font-size-screenplay: 12pt;
-  --font-size-screenplay-title: 16pt;
+  --font-size-screenplay-title: 12pt;
 
   /* header */
   --bg-header:      #1e1e1e;
@@ -68,50 +68,36 @@
   --header-padding: 0.5rem 1rem;
 
   /* sidebar */
-  --app-sidebar-bg:           #1e1e1e;
-  --app-sidebar-fg:           #ccc;
-  --app-sidebar-width:        220px;
-  --app-sidebar-width-closed: 56px;
-  --app-sidebar-transition-ease:      0.2s ease;
+  --app-sidebar-bg:               #1e1e1e;
+  --app-sidebar-fg:               #ccc;
+  --app-sidebar-width:            220px;
+  --app-sidebar-width-closed:     56px;
+  --app-sidebar-transition-ease:  0.2s ease;
 
-  /* main content */
-  --editor-height:     100%;
-  --editor-min-height: 0;
+  /* CM6 Editor */
+  --cm-editor-highlight-title-page:     #e06c75;
+  --cm-editor-highlight-scene_heading:  #32cd32;
+  --cm-editor-highlight-action:         #00bfff;
+  --cm-editor-highlight-dialogue:       #ffa600;
+  --cm-editor-highlight-transition:     #ff69b4;
+  --cm-editor-selected-bg:              rgba(255, 200, 0, 0.1);
+  --cm-insert-bar-btn-active-bg:        #000;
+  --cm-insert-bar-btn-active-fg:        #fffbe6;
+
 }
 
-
-/* Dark‐mode overrides */
-body.dark {
-  --bg-page:         #111;
-  --fg-page:         #ddd;
-  --bg-header:       #222;
-  --header-border:   1px solid #444;
-  --app-sidebar-bg:      #222;
-  --app-sidebar-fg:      #ddd;
-}
-
-/* Light‐mode overrides */
-/* 
-body.light {
-  --bg-page:         #fafafa;
-  --fg-page:         #222;
-  --bg-header:       #eee;
-  --header-border:   1px solid #ccc;
-  --app-sidebar-bg:      #f5f5f5;
-  --app-sidebar-fg:      #333;
-}
-*/
 
 /*─────────────────────────────────────────────────────────────────────────*/
-/* 2. Base defaults for html, body                                        */
+/* Base defaults for html, body, and main layout                          */
 /*───────────────────────────────────────────────────────────────────────*/
+
 /* Root fill */
 html, body, #app-shell { height: 100%; margin: 0; }
 
 /* App-shell grid: top-bar + rest */
 #app-shell {
   display:grid;
-  grid-template-rows: 3rem 1fr;   /* 3rem top-bar, rest fills */
+  grid-template-rows: 3rem 1fr;
   background-color: var(--bg-page);
   color:            var(--fg-page);
   font-family:      var(--font-ui);
@@ -119,88 +105,38 @@ html, body, #app-shell { height: 100%; margin: 0; }
 
 /* Top bar */
 #top-bar {
-  display:flex; align-items:center; padding:0 1rem;
-  background:var(--bg-header); color:var(--fg-page);
+  display:flex;
+  align-items:center;
+  padding:0 1rem;
+  background:var(--bg-header);
+  color:var(--fg-page);
 }
 
 /* Three-columns inside the body row */
 #body-grid {
   display:grid;
   grid-template-columns: auto 1fr auto;
+  overflow: auto;
   height:100%;
-  overflow-x: hidden;
 }
 
-#sidebar-left[hidden],
-#sidebar-right[hidden] { display: none; }
-
-
-/* main view area never scrolls – individual views manage scrolling */
+/* main column for all pages/views - router mounts here */
 #view-slot {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
   height: 100%;
 }
 
+/*─────────────────────────────────────────────────────────────────────────*/
+/* CM6 Stuff                                                              */
+/*───────────────────────────────────────────────────────────────────────*/
 
-.editor-root,
-.cm-wrapper,
-.cm-editor {          /* cm-editor is CodeMirror’s outer node */
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;      /* important: allow children to scroll */
-}
-
-/* .cm-wrapper provides the viewport */
-.cm-wrapper { overflow: auto; }
-
-/* centre a “page” of 8.5 in inside the viewport */
 .cm-editor {
-  padding: 0 1in;              /* gutters left & right    */
-  box-sizing: border-box;
-  max-width: 8.5in;
-  margin: 0 auto;              /* horizontally centred    */
+  max-width: 8.5in;  /* Standard screenplay page width */
+  margin: 0 auto;
+  color: #abb2bf;
+  background-color: #282c34;
 }
 
-/* CodeMirror’s own scroller becomes the true scrollDOM */
-.cm-scroller {
-  flex: 1 1 auto;              /* fills .cm-wrapper */
-  overflow: auto;              /* single scrollbar   */
-  min-height: 0;               /* allow overflow     */
-}
 
-/*!* Editor page inner layout (3 columns) *!*/
-/*.editor-page {*/
-/*  display:grid;*/
-/*  grid-template-columns: 1fr auto 1fr;   !* gutters – centre auto width *!*/
-/*  padding:0 1rem;       !* side padding so gutters never hit edge *!*/
-/*}*/
-
-/*.editor-centre {*/
-/*  max-width:8.5in;      !* screenplay width cap *!*/
-/*  width:100%;*/
-/*  font-size: var(--font-size-screenplay);*/
-/*}*/
-
-/*!*────────────────────────────────────────────────────────────────────────*!*/
-/*!* 3. Pages                                                              *!*/
-/*!*──────────────────────────────────────────────────────────────────────*!*/
-
-/*#content-grid:has(#page-slot > .editor-page) {*/
-/*  background: var(--bg-editor);*/
-/*  color:      var(--fg-editor);*/
-/*}*/
-
-/*!*────────────────────────────────────────────────────────────────────────*!*/
-/*!* 4. Utility classes                                                    *!*/
-/*!*──────────────────────────────────────────────────────────────────────*!*/
-
-/*.hidden {*/
-/*  display: none !important;*/
-/*}*/
-
-/*!**:focus {*!*/
-/*!*  outline: 2px solid cyan;*!*/
-/*!*}*!*/

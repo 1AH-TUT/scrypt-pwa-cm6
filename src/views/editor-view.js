@@ -448,12 +448,13 @@ function screenplayLayout(controller) {
         const CLASS_BY_TYPE = {
           transition: "cm-transition",
           scene_heading: "cm-heading",
-          title: "cm-fp-title",
           action: "cm-action",
-          source: "cm-center",
+          title: "cm-fp-title",
           byline: "cm-center",
-          date: "cm-right",
+          source: "cm-center",
+          copyright: "cm-center",
           contact: "cm-left",
+          date: "cm-right",
           page_break: "cm-line-break"
         };
 
@@ -696,8 +697,6 @@ function elementHighlighter(controller) {
   });
 }
 
-const focusable = EditorView.contentAttributes.of({ tabindex: "0" });
-
 function interceptEnter(controller){
   return keymap.of([{
     key:'Enter',
@@ -727,9 +726,8 @@ export const buildExtensions = controller => [
   insertPlaceholderField(controller),
   persistentInsertBar(controller),
   EditorView.editable.of(false),
-  focusable,
+  EditorView.contentAttributes.of({ tabindex: "0" }),
   EditorView.lineWrapping,
-  oneDark,
   myTheme
 ];
 

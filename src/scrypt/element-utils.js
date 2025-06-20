@@ -34,7 +34,7 @@ export function toLinesAndMap(json) {
 
   // Add script meta
   blank();
-  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(key => {
+  ['title', 'byline', 'source', 'copyright', 'contact', 'date'].forEach(key => {
     if (key in json["titlePage"]) {
       json["titlePage"][key].split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
