@@ -3,11 +3,11 @@
 import { EditorView } from "@codemirror/view";
 
 /**
- * myTheme — Custom screenplay editor theme for CodeMirror 6.
+ * mainTheme — Custom screenplay editor theme for CodeMirror 6.
  * - Sets font, spacing, element coloring, etc.
  * - Used in editor-view.js as an extension.
  */
-export const myTheme = EditorView.baseTheme({
+export const mainTheme = EditorView.baseTheme({
   ".cm-content": {
     fontFamily: "var(--font-screenplay, 'Courier Prime, monospace')", fontSize: "var(--font-size-screenplay, 12pt)",
     marginLeft: "1.4in", marginRight: "0.7in"

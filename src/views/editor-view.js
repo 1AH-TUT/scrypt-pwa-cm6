@@ -19,7 +19,7 @@ import '../components/edit-title-contact.js';
   CSS lives here
   See also extension `screenplayLayout` (maps element types to decoration classes)
   */
-import { myTheme } from './editor-view-themes.js';
+import { mainTheme } from './editor-view-themes.js';
 import { oneDark } from "@codemirror/theme-one-dark";
 
 /* --- Debug only stuff --- */
@@ -383,7 +383,7 @@ class PlaceholderWidget extends WidgetType {
   insertElement(type, wrap) {
     wrap.dispatchEvent(new CustomEvent("cm-request-insert", {
       bubbles: true,
-      detail: { type, id: this.id, beforeAfter: this.beforeAfter }
+      detail: { type, id: this.id, persistent: this.persistent, beforeAfter: this.beforeAfter }
     }));
   }
 }
@@ -492,32 +492,8 @@ function elementNavigator(controller) {
       return;
     }
 
-    const { start, end } = controller.elementPositions[targetId];
-    const doc = view.state.doc;
-
-    // Move the cursor to the first line
-    const startPos = doc.line(start + 1).from;
-    view.dispatch({ selection: { anchor: startPos } });
-
-    // Helper: scroll a given doc position into view
-    const scrollLineAt = pos => {
-      const { node } = view.domAtPos(pos);
-      const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-      const lineDiv = el.closest(".cm-line");
-      if (lineDiv) lineDiv.scrollIntoView({ block });
-    };
-
-    // Scroll the first line (nearest)
-    scrollLineAt(startPos);
-
-    requestAnimationFrame(() => {
-      scrollLineAt(startPos);
-      if (scrollToBlank) {
-        const blankPos = doc.line(end + 2).from;
-        scrollLineAt(blankPos);
-      }
-      view.focus();
-    });
+    const { start } = controller.elementPositions[targetId];
+    scrollSelect(view, start, block === "center");
   };
 
   const move = dir => view => {
@@ -536,61 +512,62 @@ function elementNavigator(controller) {
     return true;
   };
 
-  const insertPlaceholder = loc => view => {
-    console.debug("insertPlaceholder :", loc)
-
-    const ids = getElementOrder(controller);
-    if (!ids.length) return false;
-
-    let curId = controller.selectedId;
-    if (curId == null) {
-      console.debug("insertPlaceholder:  no element selected")
-      return false
-    }
-    console.debug("insertPlaceholder curId=", curId)
-
-    const posInfo = controller.elementPositions[curId];
-    if (!posInfo) {
-      console.debug("insertPlaceholder: no posInfo")
-      return false;
-    }
-    console.debug("insertPlaceholder: posInfo:", posInfo)
-
+  const doInsertPlaceholder = (view, loc, curId, posInfo) => {
     const doc = view.state.doc;
     let pos;
     if (loc === "below") {
-      // Insert after this element's last line and trailing blank line
       pos = doc.line(posInfo.end + 2).from;
     } else {
-      // Insert before this element's first line
       pos = doc.line(posInfo.start).from;
     }
-    console.debug("insertPlaceholder: pos:", pos)
-
-    // Dispatch the effect to trigger insertPlaceholderField
     view.dispatch({ effects: beginInsert.of({ pos, id: curId, beforeAfter: loc === "below" ? "after" : "before" }) });
-
-    // focus the editor
     requestAnimationFrame(() => view.focus());
+  };
 
+  const insertPlaceholder = loc => view => {
+    let curId = controller.selectedId ?? controller.lineMeta[view.state.doc.lineAt(view.state.selection.main.head).number - 1]?.id;
+    const posInfo = controller.elementPositions[curId];
+    if (!curId || !posInfo) return false;
+
+    // If we’re on the last element and asked to insert below, just jump to persistent bar
+    const ids = getElementOrder(controller);
+    const lastId = ids.at(-2);  // before _insert_bar_
+    if (loc === "below" && curId === lastId) {
+      gotoElement(view, "_insert_bar_");
+      return true;
+    }
+
+    doInsertPlaceholder(view, loc, curId, posInfo);
     return true;
-  }
+  };
 
   const inInsertBar = () => !!document.activeElement?.closest(".cm-insert-bar");
 
   const gotoFirst = view => {
-    const first = getElementOrder(controller)[0];
-    gotoElement(view, first);  // scene-0 or first real element
+    const firstId = getElementOrder(controller)[0];
+    const anchor = view.state.doc.line(controller.elementPositions[firstId].start + 1).from;
+
+    view.dispatch({
+      selection: { anchor },
+      effects: EditorView.scrollIntoView(0, { y: "start" }),
+    });
+
     return true;
   };
 
   const gotoLast = view => {
-    const last = getElementOrder(controller).slice(-2)[0];  // before _insert_bar_
-    gotoElement(view, last);
+    const lastId = getElementOrder(controller).at(-2);  // skip insert_bar
+    const anchor = view.state.doc.line(controller.elementPositions[lastId].start + 1).from;
+
+    view.dispatch({
+      selection: { anchor },
+      effects: EditorView.scrollIntoView(view.state.doc.length, { y: "end", yMargin: 500 })
+    });
+
     return true;
   };
 
-  function gotoNextScene(view, controller) {
+  const gotoNextScene = view => {
     const nextId = controller.getNextSceneHeadingId(controller.selectedId);
     if (nextId) {
       gotoElement(view, nextId, false, "center");
@@ -599,7 +576,7 @@ function elementNavigator(controller) {
     return false;
   }
 
-  function gotoPrevScene(view, controller) {
+  const gotoPrevScene = view => {
     const prevId = controller.getPreviousSceneHeadingId(controller.selectedId);
     if (prevId) {
       gotoElement(view, prevId, false, "center");
@@ -608,32 +585,24 @@ function elementNavigator(controller) {
     return false;
   }
 
-  function makeElementDelete(controller) {
-    return function (view) {
-      // Ignore if focus is in an insert bar - might not be needed...
-      if (document.activeElement?.closest(".cm-insert-bar")) {
-        return false;
-      }
+  const deleteElement = () => {
+    const id = controller.selectedId;
+    if (!id) return false;
 
-      const id = controller.selectedId;
-      if (!id) return false;
-
-      controller.deleteElement(id, { deleteFullScene: false });
-      return true;
-    };
+    controller.deleteElement(id, { deleteFullScene: false });
+    return true;
   }
-  const deleteCmd = makeElementDelete(controller);
 
   return keymap.of([
-    { key: "Tab",       run: view => { if (inInsertBar()) return false; return move("next")(view); } },
-    { key: "Shift-Tab", run: view => { if (inInsertBar()) return false; return move("prev")(view); } },
-    { key: "Home",      run: gotoFirst, preventDefault: true },
-    { key: "End",       run: gotoLast , preventDefault: true },
-    { key: "PageUp",    run: view => gotoPrevScene(view, controller), preventDefault: true },
-    { key: "PageDown",  run: view => gotoNextScene(view, controller), preventDefault: true },
-    { key: "Delete",    run: deleteCmd, preventDefault: true },
-    { key: "Backspace", run: deleteCmd, preventDefault: true },
-    { key: "Alt-n",     run: insertPlaceholder("below")  },
+    { key: "Tab",         run: view => { if (inInsertBar()) return false; return move("next")(view); } },
+    { key: "Shift-Tab",   run: view => { if (inInsertBar()) return false; return move("prev")(view); } },
+    { key: "Home",        run: gotoFirst,     preventDefault: true },
+    { key: "End",         run: gotoLast ,     preventDefault: true },
+    { key: "PageUp",      run: gotoPrevScene, preventDefault: true },
+    { key: "PageDown",    run: gotoNextScene, preventDefault: true },
+    { key: "Delete",      run: deleteElement, preventDefault: true },
+    { key: "Backspace",   run: deleteElement, preventDefault: true },
+    { key: "Alt-n",       run: insertPlaceholder("below")  },
     { key: "Alt-Shift-n", run: insertPlaceholder("above")  },
   ]);
 }
@@ -680,7 +649,7 @@ function elementHighlighter(controller) {
       if (!lineNoPositions) return builder.finish();
 
       const { start, end } = lineNoPositions;
-      // Iterate over the lines in the viewport, but only decorate those in [start,end]
+      // Iterate over the lines in the viewport, decorate those in [start,end]
       for (let { from } of view.viewportLineBlocks) {
         const ln = view.state.doc.lineAt(from).number - 1;
         if (ln < start || ln > end) continue;
@@ -728,14 +697,24 @@ export const buildExtensions = controller => [
   EditorView.editable.of(false),
   EditorView.contentAttributes.of({ tabindex: "0" }),
   EditorView.lineWrapping,
-  myTheme
+  mainTheme
 ];
 
-const getElementOrder = controller => {
-  const ids = controller.elementOrder;
-  ids.push("_insert_bar_");
-  return ids;
+
+/* --- Helpers --- */
+
+function scrollSelect(view, lineNo0, center = false) {
+  const pos = view.state.doc.line(lineNo0 + 1).from;
+
+  requestAnimationFrame(() => {
+    view.dispatch({
+      selection: { anchor: pos },
+      effects: EditorView.scrollIntoView(pos, { y: center ? "center" : "nearest" })
+    });
+  });
 }
+
+const getElementOrder = controller => { return [...controller.elementOrder, "_insert_bar_"]; }
 
 /*
   Create the View
@@ -755,12 +734,14 @@ export function createEditorView({ parent, controller }) {
     initialSelection = { anchor: pos };
   }
 
+  // Build the editor state
   const state = EditorState.create({
     doc: controller.text,
     selection: initialSelection,
     extensions: buildExtensions(controller)
   });
 
+  // Build the Editor View
   const view = new EditorView({ parent, state });
   // Make the outer editor node focusable & grab focus
   view.dom.tabIndex = 0;
@@ -774,23 +755,28 @@ export function createEditorView({ parent, controller }) {
   });
 
   view.dom.addEventListener("cm-request-insert", e => {
-    const { type, id: refId, beforeAfter } = e.detail;
-    
+    const { type, id: refId, persistent, beforeAfter } = e.detail;
+
     // Update Scrypt
     const newId   = controller.createElementRelativeTo(refId, type, beforeAfter);
 
-    // Close the insert bar right away
+    // Close the insert bar
     view.dispatch({ effects: cancelInsert.of(null) });
 
     if (newId) {
       // Open the edit widget for the new element only after the controller/model has flushed & view has updated
       const open = () => {
         controller.removeEventListener("change", open);
+
         view.dispatch({ effects: beginEdit.of({ id: newId }) });
+
         const { start } = controller.elementPositions[newId];
         view.dispatch({
           selection: { anchor: view.state.doc.line(start + 1).from },
-          scrollIntoView: true
+          ...(persistent  // If we came from the permanent insert bar, always scroll to doc end and some for good measure
+            ? { effects: EditorView.scrollIntoView(view.state.doc.length, { y: "end", yMargin: 500 }) }
+            : { scrollIntoView: true }
+          )
         });
       };
       // do this once, after the next change event is handled
