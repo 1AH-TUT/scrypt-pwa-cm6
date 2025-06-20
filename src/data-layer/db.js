@@ -26,7 +26,7 @@ export async function getAllScryptMetas() {
 }
 
 /**
- * Get the **full** scrypt by id: { id, titlePage, metaData, data }
+ * Get the full scrypt by id: { id, titlePage, metaData, data }
  */
 export async function getScrypt(id) {
   const db = await dbPromise;
@@ -42,7 +42,7 @@ export async function getScrypt(id) {
 }
 
 /**
- * Save a **full** scrypt: { id?, titlePage, metaData, data }
+ * Save a full scrypt: { id?, titlePage, metaData, data }
  * Returns id (number)
  */
 export async function saveScrypt(scrypt) {

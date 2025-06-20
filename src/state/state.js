@@ -5,11 +5,11 @@ const state_keys = {
 }
 
 export function getCurrentScriptId() {
-  // use session if we have it
+  // Use session if we have it
   let v = sessionStorage.getItem(state_keys.currentScrypt);
   if (v != null) return Number(v) || null;
 
-  // fallback to last opened
+  // Fallback to last opened
   v = localStorage.getItem(state_keys.lastScrypt);
   if (v != null) return Number(v) || null;
 

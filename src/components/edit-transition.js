@@ -31,7 +31,7 @@ export class EditTransition extends EditBase {
 
     return html`<div class="right" role="group" aria-label="Transition">
         <select
-          class="inputlike"
+          class="inputlike transition"
           aria-label="Transition type"
           @keydown=${this._onKeydown}
         >
@@ -41,6 +41,11 @@ export class EditTransition extends EditBase {
   }
 
   _getPatch() {
+    // require transition non-empty
+    if (!this._validate(['select.transition'])) {
+     return null;
+    }
+
     const text = this.shadowRoot.querySelector('select')?.value.toUpperCase() ?? '';
     return { text };
   }

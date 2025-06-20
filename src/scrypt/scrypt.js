@@ -23,6 +23,7 @@ export class Scrypt extends EventTarget {
     this._loaded    = true; // already loaded
   }
 
+  // Recompose JSON
   getJson() {
     return { id: this.id, titlePage: this.titlePage, data: this.data, metaData: this.metaData }
   }
@@ -69,6 +70,11 @@ export class Scrypt extends EventTarget {
       const el = scene.elements.find(e => e.id === id);
       if (el) return el;
     }
+    // handle title elements
+    if (id.startsWith('tp_')) {
+      const field = id.slice(3);
+      return { type: "titlePage", text: this.titlePage[field] };
+    }
     return null;
   }
 
@@ -107,7 +113,7 @@ export class Scrypt extends EventTarget {
 
     if (type === 'scene_heading' && sceneIndex === 0) {
       // scene 0 is only for leading transitions etc.
-      // TODO: flag user/remove button
+      // TODO: flag user
       console.warn("Attempt to insert scene_heading within scene 0 Ignored - returning null");
       return null;
     }
@@ -124,7 +130,7 @@ export class Scrypt extends EventTarget {
     }
 
     /*
-     * STANDARD INSERTIONS
+     * Standard insertions
      */
     const newEl = { type, id: `se${this.metaData.nextId++}`, text: '' };
     const pos = beforeAfterScene === 'before' ? elementIndex : elementIndex + 1;
@@ -154,7 +160,6 @@ export class Scrypt extends EventTarget {
       // New scene = slugline + any tail
       const newScene = { id: `s${this.metaData.nextId++}`, elements: [headingEl, ...tail] };
 
-      // Insert it at the right index
       const insertAt = (beforeAfterScene === 'before' && elementIndex === 0)
           ? sceneIndex      // place before an existing slugline
           : sceneIndex + 1  // otherwise always after
@@ -243,4 +248,13 @@ export class Scrypt extends EventTarget {
     }
   }
 
+    updateTitlePageField(field, text){
+      if(!(field in this.titlePage)) return;
+      const old = this.titlePage[field];
+      this.titlePage[field] = text;
+      this._markDirty();
+      this.dispatchEvent(new CustomEvent('change',{
+        detail:{ kind:'titlepage', field, old, new:text }
+      }));
+    }
 }

@@ -16,10 +16,6 @@ export function explodeElement(el) {
       });
       break;
     default:
-      // if (! el.text) {
-      //   console.debug('No text in element', el)
-      // }
-
       el.text.split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
         meta.push({id, type: el.type, field:"text", idx:i});
@@ -34,14 +30,17 @@ export function toLinesAndMap(json) {
 
   const blank = () => { lines.push(""); lineMap.push(null); }
   const newPage = () => { lines.push(""); lineMap.push({"type": "page_break"}); }
+  const capitalizeFirst = (str) => { if (!str) return str; return str.charAt(0).toUpperCase() + str.slice(1); }
 
   // Add script meta
   blank();
-  ['title', 'byline', 'source', 'contact', 'copyright', 'date'].forEach(key => {
+  ['title', 'byline', 'source', 'copyright', 'contact', 'date'].forEach(key => {
     if (key in json["titlePage"]) {
       json["titlePage"][key].split(/\r?\n/).forEach((t,i)=>{
         lines.push(t);
-        lineMap.push({type: `${key}`, field:"text", idx:i});
+        const data = { id:`tp_${key}`, type:key, field:'text', idx:i }
+        if (i===0) data['label'] = `${capitalizeFirst(key)}:`;
+        lineMap.push(data);
       });
       blank();
     }

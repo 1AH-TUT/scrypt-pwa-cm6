@@ -19,7 +19,7 @@ export class EditAction extends EditBase {
   /* DOM */
   _renderControl() {
     return html`<textarea
-        class="inputlike"
+        class="inputlike action"
         .value=${this.value ?? ''}
         @keydown=${this._onKeydown}
         aria-label="Action description"
@@ -28,6 +28,11 @@ export class EditAction extends EditBase {
 
   /* Patch object */
   _getPatch() {
+    // require text non-empty
+    if (!this._validate(['textarea.action'])) {
+     return null;
+    }
+
     const text = this.shadowRoot.querySelector('textarea')?.value ?? '';
     return { text: text.trim() };
   }

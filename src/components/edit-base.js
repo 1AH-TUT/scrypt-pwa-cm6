@@ -14,7 +14,10 @@ import { LitElement, html, css } from 'lit';
 export class EditBase extends LitElement {
   #committed = false;
 
-  static properties = { value: { type: String } };
+  static properties = {
+    value: { type: String },
+    placeholder:  { type:String },
+  };
 
   static styles = css`
     :host { display: block; }
@@ -25,7 +28,7 @@ export class EditBase extends LitElement {
       padding: 0.25em 1em;
       margin: 0.5em 0;
     }
-    .invalid { border: 2px solid #e53935; }
+    .invalid { border: 2px solid #e53935; outline:2px solid #e53935; }
   `;
 
   connectedCallback() {
@@ -37,7 +40,6 @@ export class EditBase extends LitElement {
     super.disconnectedCallback();
   }
   _maybeSaveOnWidgetBlur = (e) => {
-    if (!this.constructor.enableBlurSave) return;
     // If focus is still inside this widget, do nothing
     if (this.contains(e.relatedTarget)) return;
     // Defer the save until after the current CM6 update finishes
@@ -59,6 +61,33 @@ export class EditBase extends LitElement {
 
   render() { return this._renderControl(); }
 
+  /**
+   * Validate that each selector has a non-empty, trimmed value.
+   * Adds `.invalid` and wires up one-time clear on next input/change.
+   * @param {string[]} selectors  – e.g. ['select.indicator','input.location']
+   * @returns {boolean}  – true if all fields are valid
+   */
+  _validate(selectors) {
+    const invalidEls = selectors
+      .map(sel => this.shadowRoot.querySelector(sel))
+      .filter(el => el && !el.value.trim());
+
+    if (invalidEls.length) {
+      invalidEls.forEach(el => {
+        el.classList.add('invalid');
+        const clear = () => {
+          el.classList.remove('invalid');
+          el.removeEventListener('input', clear);
+          el.removeEventListener('change', clear);
+        };
+        el.addEventListener('input', clear, { once: true });
+        el.addEventListener('change', clear, { once: true });
+      });
+      return false;
+    }
+    return true;
+  }
+
   /* ---------- Shared save / cancel ---------- */
   _finish(type) {
     if (this.#committed) return; // already fired once
@@ -67,9 +96,10 @@ export class EditBase extends LitElement {
     if (type === 'save') {
       const patch = this._getPatch();
       if (patch) {
-        this.dispatchEvent(
-          new CustomEvent('save', { detail: patch, bubbles: true, composed: true })
-        );
+        this.dispatchEvent(new CustomEvent('save', { detail: patch, bubbles: true, composed: true }));
+      }
+      else {
+        this.#committed = false;
       }
     } else {
       this.dispatchEvent(new Event('cancel', { bubbles: true, composed: true }));
