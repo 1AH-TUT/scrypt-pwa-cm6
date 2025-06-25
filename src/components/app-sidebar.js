@@ -74,8 +74,9 @@ export class AppSidebar extends LitElement {
         <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}>☰</button>
       </header>
       <nav>
+        <a @click=${() => this.#go("workspace")}>🗂 <span>Workspace</span></a>
+        <br />
         <a @click=${() => this.#go("editor")}>📄 <span>Editor</span></a>
-        <a @click=${() => this.#go("library")}>📚 <span>Library</span></a>
       </nav>`;
   }
 }

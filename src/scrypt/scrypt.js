@@ -248,7 +248,7 @@ export class Scrypt extends EventTarget {
     }
   }
 
-    updateTitlePageField(field, text){
+  updateTitlePageField(field, text){
       if(!(field in this.titlePage)) return;
       const old = this.titlePage[field];
       this.titlePage[field] = text;
@@ -256,5 +256,5 @@ export class Scrypt extends EventTarget {
       this.dispatchEvent(new CustomEvent('change',{
         detail:{ kind:'titlepage', field, old, new:text }
       }));
-    }
+  }
 }

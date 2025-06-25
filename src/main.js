@@ -2,7 +2,9 @@ import "./components/app-sidebar.js";
 import { Scrypt } from './scrypt/scrypt.js';
 import { setCurrentScrypt } from './state/current-scrypt.js';
 import { mountPage } from './router.js';
-import {setCurrentScriptId} from "./state/state.js";
+import { getCurrentScriptId, setCurrentScriptId } from "./state/state.js";
+import { exportScript } from "./services/export-service.js";
+
 
 /* one-time guard for dev server */
 if (!window.__scryptPwaBooted) {
@@ -26,8 +28,13 @@ if (!window.__scryptPwaBooted) {
       mountPage(view);
     });
 
+    document.addEventListener("export-current", async () => {
+      const id = getCurrentScriptId();
+      if (id != null) await exportScript({ id, format:"scrypt" });
+    });
+
     /* initial splash */
-    mountPage("library");
+    mountPage("workspace");
 
     /* debug dump cache version */
     if ('serviceWorker' in navigator) {
