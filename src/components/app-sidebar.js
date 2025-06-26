@@ -1,8 +1,13 @@
 import { LitElement, html, css } from "lit";
+import { hasCurrentScrypt } from "../state/current-scrypt.js";
+import { exportScript, hasNativeSaveDialog } from "../services/export-service.js";
+import {getCurrentScriptId} from "../state/state.js";
 
 export class AppSidebar extends LitElement {
   static properties = {
-    open: { type: Boolean, reflect: true }
+    open: { type: Boolean, reflect: true },
+    page:   { type: String   },
+    loaded: { type: Boolean  }
   };
 
   static styles = css`
@@ -59,7 +64,27 @@ export class AppSidebar extends LitElement {
   constructor() {
     super();
     this.open = true;
+    this.loaded = hasCurrentScrypt();
   }
+
+  connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener("scrypt-changed",  this.#syncState);
+    window.addEventListener("page-changed",    this.#onPage);
+  }
+  disconnectedCallback() {
+    window.removeEventListener("scrypt-changed", this.#syncState);
+    window.removeEventListener("page-changed",   this.#onPage);
+    super.disconnectedCallback();
+  }
+
+  #syncState = () => {           // called when Scrypt loads/unloads
+    this.loaded = hasCurrentScrypt();
+  };
+  #onPage = (e) => {             // called when router mounts a page
+    this.page = e.detail;
+  };
+
 
   #toggle() {
     const hostAside = this.closest('aside');
@@ -70,14 +95,28 @@ export class AppSidebar extends LitElement {
   #go(page) { this.dispatchEvent(new CustomEvent("nav", { detail: page, bubbles: true, composed: true })) }
 
   render() {
-    return html`<header>
+    const { loaded, page } = this;
+
+    // Conditional links
+    const editorLink   = (loaded && page !== "editor") ? html`<a @click=${() => this.#go("editor")}>📄 <span>Editor</span></a>` : null;
+
+    const exportLink   = (loaded && page === "editor") ? html`
+      <a
+        @click=${() => exportScript({ id: getCurrentScriptId(), format: "scrypt" })}
+        aria-label="Export current script">
+        ⬇️ <span>${hasNativeSaveDialog ? "Export" : "Download"}</span>
+      </a>` : null;
+
+    return html`
+      <header>
         <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}>☰</button>
       </header>
+
       <nav>
         <a @click=${() => this.#go("workspace")}>🗂 <span>Workspace</span></a>
-        <br />
-        <a @click=${() => this.#go("editor")}>📄 <span>Editor</span></a>
-      </nav>`;
+        ${editorLink} ${exportLink}
+      </nav>
+    `;
   }
 }
 

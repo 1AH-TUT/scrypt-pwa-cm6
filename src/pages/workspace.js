@@ -40,7 +40,7 @@ export default function makeWorkspacePage() {
 
   // Container for the list
   const section2 = document.createElement("h3");
-  section2.textContent = "Local Scrypts";
+  section2.textContent = "Scrypts in Local Storage";
   wrapper.appendChild(section2);
 
   const list = document.createElement("div");

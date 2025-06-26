@@ -20,9 +20,9 @@ const exporters = {
   async scrypt(data) {
     // Strip DB id for portability
     const { id, ...portable } = data;
-    const name     = slug(portable.titlePage?.title) || "untitled";
-    const json     = JSON.stringify(portable, null, 2);
-    const blob     = new Blob([json], { type: "application/json" });
+    const name= safeName(portable.titlePage?.title) || "untitled";
+    const json= JSON.stringify(portable, null, 2);
+    const blob= new Blob([json], { type: "application/json" });
     return { blob, filename: `${name}.scrypt` };
   },
 
@@ -36,29 +36,32 @@ const exporters = {
 };
 
 // ---- shared helpers ----
-function slug(str = "") {
-  return str.trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-+|-+$/g, "");
+/** Keep spaces & case; strip only characters illegal on Win/macOS */
+function safeName(str = "") {
+  return str.trim().replace(/[\\/:*?"<>|]+/g, "");
 }
 
 async function triggerDownload(blob, filename) {
   if ('showSaveFilePicker' in window) {
     // Prompt user for a path
-    const handle = await window.showSaveFilePicker({
-      suggestedName: filename,
-      types: [{
-        description: 'Scrypt screenplay',
-        accept: { 'application/json': ['.scrypt'] }
-      }]
-    });
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: 'Scrypt screenplay',
+          accept: {'application/json': ['.scrypt']}
+        }]
+      });
 
-    // Stream the blob to disk
-    const writable = await handle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-    return;          // ← done – no auto-download
+      // Stream the blob to disk
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return true;
+    } catch (err) {
+      if (err.name === "AbortError") return false; // user cancelled
+      throw err;
+    }
   }
 
   // Fallback for Safari / Firefox - use download

@@ -70,22 +70,37 @@
   --theme-hue: 0;
   --theme-saturation: 0%;
 
+  /* luminosity - page / chrome */
+  --lum-bg-light: 90%;
+  --lum-bg-dark : 8%;
+  --lum-fg-light: 33%;
+  --lum-fg-dark : 78%;
+
+  /* luminosity - editor page */
+  --lum-bg-edit-light: 94%;
+  --lum-bg-edit-dark : 14%;
+  --lum-fg-edit-light: 12%;
+  --lum-fg-edit-dark : 92%;
+
   /* page-level fonts & colors */
   --bg-page: light-dark(
-    hsl(var(--theme-hue) var(--theme-saturation) 90%),
-    hsl(var(--theme-hue) var(--theme-saturation) 6%)
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-bg-light)),
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-bg-dark))
   );
+
   --fg-page: light-dark(
-    hsl(var(--theme-hue) var(--theme-saturation) 33%),
-    hsl(var(--theme-hue) var(--theme-saturation) 76%)
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-fg-light)),
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-fg-dark))
   );
+
   --bg-editor: light-dark(
-    hsl(var(--theme-hue) var(--theme-saturation) 94%),
-    hsl(var(--theme-hue) var(--theme-saturation) 12%)
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-bg-edit-light)),
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-bg-edit-dark))
   );
+
   --fg-editor: light-dark(
-    hsl(var(--theme-hue) var(--theme-saturation) 11%),
-    hsl(var(--theme-hue) var(--theme-saturation) 100%)
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-fg-edit-light)),
+    hsl(var(--theme-hue) var(--theme-saturation) var(--lum-fg-edit-dark))
   );
 
   /* Screenplay editor typography */
@@ -117,6 +132,30 @@
   --cm-insert-bar-btn-active-bg: #fffff0;
   --cm-insert-bar-btn-active-fg: #00000f;
 }
+
+
+/*────────────────────────────────────────────────────────*/
+/* Media queries                                         */
+/*──────────────────────────────────────────────────────*/
+
+@media (prefers-contrast: less) {
+    :root {
+      --lum-bg-edit-dark : 18%;
+      --lum-fg-edit-dark : 88%;
+      --lum-bg-edit-light : 90%;
+      --lum-fg-edit-light : 20%;
+    }
+}
+
+@media (prefers-contrast: more) {
+    :root {
+      --lum-bg-edit-dark : 10%;
+      --lum-fg-edit-dark : 100%;
+      --lum-bg-edit-light : 96%;
+      --lum-fg-edit-light : 8%;
+    }
+}
+
 
 /*─────────────────────────────────────────────────────────────────────────*/
 /* Base defaults for html, body, and main layout                          */
@@ -174,24 +213,16 @@ html, body, #app-shell {
 }
 
 /*─────────────────────────────────────────────────────────────────────────*/
-/* Temp Workspace page                                                      */
+/* Workspace page                                                         */
 /*───────────────────────────────────────────────────────────────────────*/
 
 .workspace-page {
   margin: 0 1em;
 }
 
-.workspace-page button {
-  margin: 0 0.1em;
-}
-
 .workspace-page h3 {
   margin-top: 2em;
 }
-
-/*.library-list li > button:first-of-type {*/
-/*  margin-left: 2em;*/
-/*}*/
 
 .workspace-message {
   margin: 0.5em 0;
@@ -218,7 +249,6 @@ html, body, #app-shell {
   padding: 0.2em 0.6em;
 }
 
-/* optional :hover row highlight */
 .workspace-row:hover {
   background: color-mix(in srgb, currentColor 10%, transparent);
 }

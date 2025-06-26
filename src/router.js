@@ -26,5 +26,6 @@ export function mountPage(name) {
       break;
   }
 
+  window.dispatchEvent(new CustomEvent("page-changed", { detail: name }));
   slot.appendChild(pageEl);
 }
