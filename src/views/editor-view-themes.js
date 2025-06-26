@@ -25,11 +25,11 @@ export const mainTheme = EditorView.baseTheme({
     width: "3.6in",
     margin: "0 auto",
     textAlign: "center",
-    paddingBottom: ".5em",
+    paddingBottom: ".1em",
     textTransform: "uppercase",
     fontWeight: "bold"
   },
-  ".cm-paren": {width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".5em"},
+  ".cm-paren": {width: "3.6in", margin: "0 auto", textAlign: "center", paddingBottom: ".1em"},
   ".cm-dialogue": {width: "3.6in", margin: "0 auto"},
   ".cm-transition": {textAlign: "right", textTransform: "uppercase"},
   ".cm-heading": {textAlign: "left", textTransform: "uppercase", fontWeight: "bold"},

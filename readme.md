@@ -120,7 +120,7 @@ src/
     validator.js        # Ajv-powered JSON validator, loads schema at runtime
   pages/
     editor.js           # Editor page: loads current script, creates controller, CM6 view
-    library.js          # Library page: browse/import/delete scripts
+    workspace.js          # Workspace page: browse/import/delete scripts
     splash.js           # Splash page: PWA welcome/loading screen
     index.js            # Page export barrel (optional, for router)
   scrypt/

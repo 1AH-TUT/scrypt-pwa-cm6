@@ -5,7 +5,7 @@ const slot = document.getElementById("view-slot");
 
 /**
  * Mounts a page into #page-slot.
- * @param {"splash"|"library"|"editor"} name
+ * @param {"splash"|"workspace"|"editor"} name
  */
 export function mountPage(name) {
   console.debug("Mounting Page:", name);
@@ -17,8 +17,8 @@ export function mountPage(name) {
       pageEl = pages.editor();
       break;
 
-    case "library":
-      pageEl = pages.library();
+    case "workspace":
+      pageEl = pages.workspace();
       break;
 
     default:
@@ -26,5 +26,6 @@ export function mountPage(name) {
       break;
   }
 
+  window.dispatchEvent(new CustomEvent("page-changed", { detail: name }));
   slot.appendChild(pageEl);
 }
