@@ -602,8 +602,12 @@ function elementNavigator(controller) {
     { key: "PageDown",    run: gotoNextScene, preventDefault: true },
     { key: "Delete",      run: deleteElement, preventDefault: true },
     { key: "Backspace",   run: deleteElement, preventDefault: true },
-    { key: "Alt-n",       run: insertPlaceholder("below")  },
-    { key: "Alt-Shift-n", run: insertPlaceholder("above")  },
+    { key: "Alt-n",       run: insertPlaceholder("below"), preventDefault: true },
+    { key: "Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
+    // extra keys for mac...
+    { key: "Mod-Alt-n",  run: insertPlaceholder("below"), preventDefault: true },
+    { key: "Mod-Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
+
   ]);
 }
 
