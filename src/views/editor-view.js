@@ -605,7 +605,7 @@ function elementNavigator(controller) {
     { key: "Alt-n",       run: insertPlaceholder("below"), preventDefault: true },
     { key: "Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
     // extra keys for mac...
-    { key: "Mod-Alt-n",  run: insertPlaceholder("below"), preventDefault: true },
+    { key: "Mod-Alt-n",       run: insertPlaceholder("below"), preventDefault: true },
     { key: "Mod-Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
 
   ]);
