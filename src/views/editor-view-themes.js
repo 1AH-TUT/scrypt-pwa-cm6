@@ -10,10 +10,11 @@ import { EditorView } from "@codemirror/view";
 export const mainTheme = EditorView.baseTheme({
   ".cm-content": {
     fontFamily: "var(--font-screenplay, 'Courier Prime, monospace')", fontSize: "var(--font-size-screenplay, 12pt)",
-    marginLeft: "1.4in", marginRight: "0.7in"
+    paddingLeft: "1.4in", paddingRight: "0.7in", margin: "0 auto", maxWidth: "8.5in",
+
   },
-  ".cm-scroller": {lineHeight: "1.2"},
-  ".cm-line": {padding: "0 2 0 0", borderLeft: "3px solid transparent"},
+  ".cm-scroller": { lineHeight: "1.2", overflowY: "auto", width: "100%", height: "100%" },
+  ".cm-line": { padding: "0 2 0 0", borderLeft: "3px solid transparent", position: "relative" },
   ".cm-fp-title": {
     fontWeight: "bold", textTransform: "uppercase", textDecoration: "underline", textAlign: "center", marginTop: "1in",
     fontSize: "var(--font-size-screenplay-title, 16pt)"
@@ -36,7 +37,7 @@ export const mainTheme = EditorView.baseTheme({
 
   ".cm-line-break::after": {content: '""', display: "block", borderBottom: "1px solid", margin: "1em 0"},
   ".cm-heading::before": {
-    content: "attr(data-scene)", position: "absolute", left: 0, width: "1.2in",
+    content: "attr(data-scene)", position: "absolute", left: "-1.4in", width: "1.2in",
     textAlign: "right", fontWeight: "bold"
   },
   ".cm-elt-selected": {
@@ -76,7 +77,7 @@ export const mainTheme = EditorView.baseTheme({
     fontFamily: "var(--font-screenplay, 'Courier Prime', monospace)", fontSize: "var(--font-size-screenplay, 12pt)"
   },
   ".cm-title-label:hover::before,.cm-title-label.cm-elt-selected::before": {
-    content: 'attr(data-label)', position: "absolute", left: "0", width: "1.3in", opacity: "0.9", textAlign: "right", fontSize: "smaller",
+    content: 'attr(data-label)', position: "absolute", left: "-1.4in", width: "1.3in", opacity: "0.9", textAlign: "right", fontSize: "smaller",
     fontStyle: "italic", fontWeight: "normal", textTransform: "none", pointerEvents: "none", whiteSpace: "nowrap", marginTop: "0.2em"
   },
 });

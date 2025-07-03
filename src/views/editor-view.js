@@ -484,17 +484,26 @@ function screenplayLayout(controller) {
 // Navigation
 function elementNavigator(controller) {
   // Helper: move selection to the first line of element `targetId`
-  const gotoElement = (view, targetId, scrollToBlank=true, block="nearest") => {
+  const gotoElement = (view, targetId, dir = "down") => {
     if (targetId === "_insert_bar_") {
-      // Find the persistent insert bar and focus it
-      const bar = view.dom.querySelector('.cm-insert-bar');
-      bar?.querySelector("button")?.focus();
+      view.dom.querySelector(".cm-insert-bar button")?.focus();
       return;
     }
 
     const { start } = controller.elementPositions[targetId];
-    scrollSelect(view, start, block === "center");
-  };
+    const anchor    = view.state.doc.line(start + 1).from;
+
+    view.dispatch({
+      selection: { anchor },
+      effects: EditorView.scrollIntoView(anchor, { y: "nearest", yMargin: view.defaultLineHeight })
+    });
+
+    /* After CM finishes that scroll, check that the whole block fits.
+      Using rAF avoids “dispatch inside update” warnings. */
+    // requestAnimationFrame(() => {
+      ensureElementFullyVisible(view, controller, targetId);
+    // });
+  }
 
   const move = dir => view => {
     const ids = getElementOrder(controller);
@@ -507,8 +516,8 @@ function elementNavigator(controller) {
     }
 
     const idx   = ids.indexOf(curId);
-    const next  = ids[(idx + (dir === "next" ? 1 : ids.length - 1)) % ids.length];
-    gotoElement(view, next);
+    const next  = ids[(idx + (dir === "down" ? 1 : ids.length - 1)) % ids.length];
+    gotoElement(view, next, dir);
     return true;
   };
 
@@ -520,8 +529,15 @@ function elementNavigator(controller) {
     } else {
       pos = doc.line(posInfo.start).from;
     }
+
+    // Dispatch the placeholder effect first
     view.dispatch({ effects: beginInsert.of({ pos, id: curId, beforeAfter: loc === "below" ? "after" : "before" }) });
-    requestAnimationFrame(() => view.focus());
+
+    // Ensure the anchor line is visible and focus
+    requestAnimationFrame(() => {
+     ensureElementFullyVisible(view, controller, curId);
+     view.focus();
+   });
   };
 
   const insertPlaceholder = loc => view => {
@@ -594,8 +610,8 @@ function elementNavigator(controller) {
   }
 
   return keymap.of([
-    { key: "Tab",         run: view => { if (inInsertBar()) return false; return move("next")(view); } },
-    { key: "Shift-Tab",   run: view => { if (inInsertBar()) return false; return move("prev")(view); } },
+    { key: "Tab",         run: view => { if (inInsertBar()) return false; return move("down")(view); } },
+    { key: "Shift-Tab",   run: view => { if (inInsertBar()) return false; return move("up")(view); } },
     { key: "Home",        run: gotoFirst,     preventDefault: true },
     { key: "End",         run: gotoLast ,     preventDefault: true },
     { key: "PageUp",      run: gotoPrevScene, preventDefault: true },
@@ -605,8 +621,8 @@ function elementNavigator(controller) {
     { key: "Alt-n",       run: insertPlaceholder("below"), preventDefault: true },
     { key: "Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
     // extra keys for mac...
-    { key: "Mod-Alt-n",       run: insertPlaceholder("below"), preventDefault: true },
-    { key: "Mod-Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
+    { key: "Ctrl-Mod-n",       run: insertPlaceholder("below"), preventDefault: true },
+    { key: "Ctrl-Mod-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
 
   ]);
 }
@@ -623,6 +639,7 @@ function elementSelector(controller) {
           if (meta?.id != null && meta?.id !== controller.selectedId) {
             controller.setSelected(meta.id);
           }
+          // if (meta?.id) ensureElementFullyVisible(update.view, controller, meta.id);
         }
       }
     }
@@ -687,8 +704,8 @@ function interceptEnter(controller){
 }
 
 export const buildExtensions = controller => [
-  // logSel(controller),  // debug only
-  // logCaret(),  // debug only
+  logSel(controller),  // debug only
+  logCaret(),  // debug only
   editingField,
   makeEditDecorationField(controller),
   interceptEnter(controller),
@@ -707,15 +724,117 @@ export const buildExtensions = controller => [
 
 /* --- Helpers --- */
 
+/**
+ * Return `true` if the CodeMirror document line `lineNo0` (0‑based)
+ * is entirely within the viewport of `view.scrollDOM`.
+ */
+function isLineFullyVisible(view, lineNo0) {
+  const pos   = view.state.doc.line(lineNo0 + 1).from;
+  const block = view.lineBlockAt(pos);              // CM6 geometry in doc coords
+
+  const vTop  = view.scrollDOM.scrollTop;
+  const vBot  = vTop + view.scrollDOM.clientHeight;
+
+  return block.top >= vTop && block.bottom <= vBot;
+}
+
+/* ensureElementFullyVisible helpers */
+let pendingTailRAF = null;
+function checkVisibility(view, firstPos, lastPos, margin) {
+  const scrollerRect = view.scrollDOM.getBoundingClientRect();
+  const vTop= view.scrollDOM.scrollTop;
+  const vBot= vTop + view.scrollDOM.clientHeight;
+
+  const headTop = view.coordsAtPos(firstPos)?.top  ?? 0;
+  const tailBottom= view.coordsAtPos(lastPos , -1)?.bottom ?? 0;
+
+  // Translate from viewport to scrollDOM space
+  const headTopInScroller= headTop - scrollerRect.top + vTop;
+  const tailBottomScroller= tailBottom - scrollerRect.top + vTop;
+
+  return {
+    needsHeadScroll: headTopInScroller  < vTop + margin,
+    needsTailScroll: tailBottomScroller > vBot - margin
+  };
+}
+
+/**
+ * Ensure the whole element is visible (plus one blank line of paddding).
+ * 1. Scroll so the element’s top is in view.
+ * 2. On the next frame, measure again; if the tail is still clipped,
+ *    scroll just enough to reveal it.
+ */
+function ensureElementFullyVisible(view, controller, elementId, dir = "down") {
+  const P   = controller.elementPositions[elementId];
+  if (!P) return;
+
+  const doc       = view.state.doc;
+  const margin    = view.defaultLineHeight || 19;
+
+  const firstPos  = doc.line(P.start + 1).from; // first visual line
+  const lastPos  = doc.line(P.end + 1).to - 1;
+
+
+  /* Nudge top into view */
+  console.debug("ensureElementFullyVisible - initial nudge")
+  view.dispatch({
+    effects: EditorView.scrollIntoView(firstPos, {
+      y: "nearest",
+      yMargin: margin
+    })
+  });
+
+  if (pendingTailRAF != null) {
+    cancelAnimationFrame(pendingTailRAF);
+    pendingTailRAF = null;
+  }
+
+  /* After the above scroll settles, see if the bottom/top still hangs out & scroll again if required  */
+  pendingTailRAF = requestAnimationFrame(() => {
+    pendingTailRAF = null;
+
+    const { needsHeadScroll, needsTailScroll } =
+      checkVisibility(view, firstPos, lastPos, margin);
+
+    if (dir === "up" && needsHeadScroll) {
+      console.debug("ensureElementFullyVisible - second nudge - up")
+      view.dispatch({
+        effects: EditorView.scrollIntoView(firstPos, {
+          y: "start",
+          yMargin: margin
+        })
+      });
+    } else if (dir === "down" && needsTailScroll) {
+      console.debug("ensureElementFullyVisible - second nudge - down")
+      view.dispatch({
+        effects: EditorView.scrollIntoView(lastPos, {
+          y: "end",
+          yMargin: margin
+        })
+      });
+    }
+  });
+}
+
+/**
+ * Ensure the blank line immediately above or below the reference
+ * element stays visible.  If it isn’t, centre it.
+ *
+ * @param {EditorView} view
+ * @param lineNo0
+ * @param center
+ *        before or after `refId`
+ */
 function scrollSelect(view, lineNo0, center = false) {
   const pos = view.state.doc.line(lineNo0 + 1).from;
 
-  requestAnimationFrame(() => {
-    view.dispatch({
-      selection: { anchor: pos },
-      effects: EditorView.scrollIntoView(pos, { y: center ? "center" : "nearest" })
-    });
-  });
+  // requestAnimationFrame(() => {
+  //   view.dispatch({
+  //     selection: { anchor: pos },
+  //     effects: EditorView.scrollIntoView(pos, { y: center ? "center" : "nearest" })
+  //   });
+  // });
+  view.dispatch({ selection: { anchor: pos } });
 }
 
 const getElementOrder = controller => { return [...controller.elementOrder, "_insert_bar_"]; }
@@ -761,16 +880,19 @@ export function createEditorView({ parent, controller }) {
   view.dom.addEventListener("cm-request-insert", e => {
     const { type, id: refId, persistent, beforeAfter } = e.detail;
 
-    // Update Scrypt
-    const newId   = controller.createElementRelativeTo(refId, type, beforeAfter);
+    // Update Scrypt & create the element
+    const newId = controller.createElementRelativeTo(refId, type, beforeAfter);
 
     // Close the insert bar
     view.dispatch({ effects: cancelInsert.of(null) });
 
     if (newId) {
-      // Open the edit widget for the new element only after the controller/model has flushed & view has updated
+      // After the controller re‑flushes, open the edit widget
       const open = () => {
         controller.removeEventListener("change", open);
+
+        // Ensure anchor visibility relative to *refId* (the element we inserted around)
+        ensureElementFullyVisible(view, controller, refId);
 
         view.dispatch({ effects: beginEdit.of({ id: newId }) });
 
@@ -779,8 +901,7 @@ export function createEditorView({ parent, controller }) {
           selection: { anchor: view.state.doc.line(start + 1).from },
           ...(persistent  // If we came from the permanent insert bar, always scroll to doc end and some for good measure
             ? { effects: EditorView.scrollIntoView(view.state.doc.length, { y: "end", yMargin: 500 }) }
-            : { scrollIntoView: true }
-          )
+            : { scrollIntoView: true })
         });
       };
       // do this once, after the next change event is handled

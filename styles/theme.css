@@ -189,7 +189,7 @@ html, body, #app-shell {
 #body-grid {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  overflow: auto;
+  overflow: hidden;
   height: 100%;
 }
 
@@ -197,7 +197,12 @@ html, body, #app-shell {
 #view-slot {
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
+  height: 100%;
+}
+
+.editor-page {
+  overflow: hidden;
   height: 100%;
 }
 
@@ -206,8 +211,12 @@ html, body, #app-shell {
 /*───────────────────────────────────────────────────────────────────────*/
 
 .cm-editor {
-  max-width: 8.5in; /* Standard screenplay page width */
-  margin: 0 auto;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.cm-content {
   color: var(--fg-editor);
   background-color: var(--bg-editor);
 }
