@@ -8,6 +8,7 @@
 import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import { EditorView, ViewPlugin, Decoration, keymap, WidgetType } from "@codemirror/view";
 
+import { ensureElementFullyVisible } from './editor-view-scroll-helpers.js'
 import '../components/edit-action.js';
 import '../components/edit-transition.js';
 import '../components/edit-scene-heading.js'
@@ -20,7 +21,6 @@ import '../components/edit-title-contact.js';
   See also extension `screenplayLayout` (maps element types to decoration classes)
   */
 import { mainTheme } from './editor-view-themes.js';
-import { oneDark } from "@codemirror/theme-one-dark";
 
 /* --- Debug only stuff --- */
 function logSel(controller){
@@ -49,6 +49,10 @@ function logCaret() {
 
 
 /* --- Editing Widget stuff --- */
+const editableTypes = [
+      'action', 'transition', 'scene_heading', 'dialogue',
+      'title', 'byline', 'date', 'source', 'copyright', 'contact'
+    ];
 
 export const beginEdit = StateEffect.define();   // value: { id }
 export const endEdit   = StateEffect.define();   // value: null
@@ -483,26 +487,19 @@ function screenplayLayout(controller) {
 
 // Navigation
 function elementNavigator(controller) {
-  // Helper: move selection to the first line of element `targetId`
   const gotoElement = (view, targetId, dir = "down") => {
     if (targetId === "_insert_bar_") {
       view.dom.querySelector(".cm-insert-bar button")?.focus();
       return;
     }
 
+    // Mark selection – triggers the selected-changed handler
+    controller.setSelected(targetId, dir);
+
+    // Move the CM caret
     const { start } = controller.elementPositions[targetId];
     const anchor    = view.state.doc.line(start + 1).from;
-
-    view.dispatch({
-      selection: { anchor },
-      effects: EditorView.scrollIntoView(anchor, { y: "nearest", yMargin: view.defaultLineHeight })
-    });
-
-    /* After CM finishes that scroll, check that the whole block fits.
-      Using rAF avoids “dispatch inside update” warnings. */
-    // requestAnimationFrame(() => {
-      ensureElementFullyVisible(view, controller, targetId);
-    // });
+    view.dispatch({ selection: { anchor } });
   }
 
   const move = dir => view => {
@@ -534,7 +531,7 @@ function elementNavigator(controller) {
     view.dispatch({ effects: beginInsert.of({ pos, id: curId, beforeAfter: loc === "below" ? "after" : "before" }) });
 
     // Ensure the anchor line is visible and focus
-    requestAnimationFrame(() => {
+    queueMicrotask(() => {
      ensureElementFullyVisible(view, controller, curId);
      view.focus();
    });
@@ -561,32 +558,34 @@ function elementNavigator(controller) {
 
   const gotoFirst = view => {
     const firstId = getElementOrder(controller)[0];
-    const anchor = view.state.doc.line(controller.elementPositions[firstId].start + 1).from;
 
-    view.dispatch({
-      selection: { anchor },
-      effects: EditorView.scrollIntoView(0, { y: "start" }),
-    });
+    // Mark selection – triggers the selected-changed handler
+    controller.setSelected(firstId, "up");
 
+    // Move the CM caret
+    const { start } = controller.elementPositions[firstId];
+    const anchor = view.state.doc.line(start + 1).from;
+    view.dispatch({ selection: { anchor } });
     return true;
   };
 
   const gotoLast = view => {
     const lastId = getElementOrder(controller).at(-2);  // skip insert_bar
-    const anchor = view.state.doc.line(controller.elementPositions[lastId].start + 1).from;
 
-    view.dispatch({
-      selection: { anchor },
-      effects: EditorView.scrollIntoView(view.state.doc.length, { y: "end", yMargin: 500 })
-    });
+    // Mark selection – triggers the selected-changed handler
+    controller.setSelected(lastId, "down");
 
+    // Move the CM caret
+    const { start } = controller.elementPositions[lastId];
+    const anchor = view.state.doc.line(start + 1).from;
+    view.dispatch({ selection: { anchor } });
     return true;
   };
 
   const gotoNextScene = view => {
     const nextId = controller.getNextSceneHeadingId(controller.selectedId);
     if (nextId) {
-      gotoElement(view, nextId, false, "center");
+      gotoElement(view, nextId, "down");
       return true;
     }
     return false;
@@ -595,7 +594,7 @@ function elementNavigator(controller) {
   const gotoPrevScene = view => {
     const prevId = controller.getPreviousSceneHeadingId(controller.selectedId);
     if (prevId) {
-      gotoElement(view, prevId, false, "center");
+      gotoElement(view, prevId, "up");
       return true;
     }
     return false;
@@ -635,11 +634,10 @@ function elementSelector(controller) {
           const head = update.state.selection.main.head;
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
-          // meta may be null if we were passed a blank line... safe to not set
-          if (meta?.id != null && meta?.id !== controller.selectedId) {
-            controller.setSelected(meta.id);
+          if (meta?.id && meta?.id !== controller.selectedId) {
+            /* defer until CM’s update cycle has finished */
+            queueMicrotask(() => controller.setSelected(meta.id, "none"));
           }
-          // if (meta?.id) ensureElementFullyVisible(update.view, controller, meta.id);
         }
       }
     }
@@ -693,19 +691,29 @@ function interceptEnter(controller){
     run(view){
       const ln= view.state.doc.lineAt(view.state.selection.main.head).number-1;
       const meta = controller.lineMeta[ln];
-      const toIntercept = ['action', 'transition', 'scene_heading', 'dialogue', 'title','byline','date','source','copyright','contact'];
-      if (!toIntercept.includes(meta?.type)) {
-        return false;
-      }
-      view.dispatch({ effects: beginEdit.of({ id:meta.id }) });
+      if (!editableTypes.includes(meta?.type)) return false;
+
+      // Make sure it's selected
+      controller.setSelected(meta.id, "none");
+
+      // After scroll triggered by selection, open the edit widget
+      queueMicrotask(() => {
+        view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
+
+        // Ensure the new widget’s tail isn’t clipped
+        queueMicrotask(() =>
+          ensureElementFullyVisible(view, controller, meta.id, "down")
+        );
+      });
+
       return true;
     }
   }]);
 }
 
 export const buildExtensions = controller => [
-  logSel(controller),  // debug only
-  logCaret(),  // debug only
+  // logSel(controller),  // debug only
+  // logCaret(),  // debug only
   editingField,
   makeEditDecorationField(controller),
   interceptEnter(controller),
@@ -723,120 +731,6 @@ export const buildExtensions = controller => [
 
 
 /* --- Helpers --- */
-
-/**
- * Return `true` if the CodeMirror document line `lineNo0` (0‑based)
- * is entirely within the viewport of `view.scrollDOM`.
- */
-function isLineFullyVisible(view, lineNo0) {
-  const pos   = view.state.doc.line(lineNo0 + 1).from;
-  const block = view.lineBlockAt(pos);              // CM6 geometry in doc coords
-
-  const vTop  = view.scrollDOM.scrollTop;
-  const vBot  = vTop + view.scrollDOM.clientHeight;
-
-  return block.top >= vTop && block.bottom <= vBot;
-}
-
-/* ensureElementFullyVisible helpers */
-let pendingTailRAF = null;
-function checkVisibility(view, firstPos, lastPos, margin) {
-  const scrollerRect = view.scrollDOM.getBoundingClientRect();
-  const vTop= view.scrollDOM.scrollTop;
-  const vBot= vTop + view.scrollDOM.clientHeight;
-
-  const headTop = view.coordsAtPos(firstPos)?.top  ?? 0;
-  const tailBottom= view.coordsAtPos(lastPos , -1)?.bottom ?? 0;
-
-  // Translate from viewport to scrollDOM space
-  const headTopInScroller= headTop - scrollerRect.top + vTop;
-  const tailBottomScroller= tailBottom - scrollerRect.top + vTop;
-
-  return {
-    needsHeadScroll: headTopInScroller  < vTop + margin,
-    needsTailScroll: tailBottomScroller > vBot - margin
-  };
-}
-
-/**
- * Ensure the whole element is visible (plus one blank line of paddding).
- * 1. Scroll so the element’s top is in view.
- * 2. On the next frame, measure again; if the tail is still clipped,
- *    scroll just enough to reveal it.
- */
-function ensureElementFullyVisible(view, controller, elementId, dir = "down") {
-  const P   = controller.elementPositions[elementId];
-  if (!P) return;
-
-  const doc       = view.state.doc;
-  const margin    = view.defaultLineHeight || 19;
-
-  const firstPos  = doc.line(P.start + 1).from; // first visual line
-  const lastPos  = doc.line(P.end + 1).to - 1;
-
-
-  /* Nudge top into view */
-  console.debug("ensureElementFullyVisible - initial nudge")
-  view.dispatch({
-    effects: EditorView.scrollIntoView(firstPos, {
-      y: "nearest",
-      yMargin: margin
-    })
-  });
-
-  if (pendingTailRAF != null) {
-    cancelAnimationFrame(pendingTailRAF);
-    pendingTailRAF = null;
-  }
-
-  /* After the above scroll settles, see if the bottom/top still hangs out & scroll again if required  */
-  pendingTailRAF = requestAnimationFrame(() => {
-    pendingTailRAF = null;
-
-    const { needsHeadScroll, needsTailScroll } =
-      checkVisibility(view, firstPos, lastPos, margin);
-
-    if (dir === "up" && needsHeadScroll) {
-      console.debug("ensureElementFullyVisible - second nudge - up")
-      view.dispatch({
-        effects: EditorView.scrollIntoView(firstPos, {
-          y: "start",
-          yMargin: margin
-        })
-      });
-    } else if (dir === "down" && needsTailScroll) {
-      console.debug("ensureElementFullyVisible - second nudge - down")
-      view.dispatch({
-        effects: EditorView.scrollIntoView(lastPos, {
-          y: "end",
-          yMargin: margin
-        })
-      });
-    }
-  });
-}
-
-/**
- * Ensure the blank line immediately above or below the reference
- * element stays visible.  If it isn’t, centre it.
- *
- * @param {EditorView} view
- * @param lineNo0
- * @param center
- *        before or after `refId`
- */
-function scrollSelect(view, lineNo0, center = false) {
-  const pos = view.state.doc.line(lineNo0 + 1).from;
-
-  // requestAnimationFrame(() => {
-  //   view.dispatch({
-  //     selection: { anchor: pos },
-  //     effects: EditorView.scrollIntoView(pos, { y: center ? "center" : "nearest" })
-  //   });
-  // });
-  view.dispatch({ selection: { anchor: pos } });
-}
-
 const getElementOrder = controller => { return [...controller.elementOrder, "_insert_bar_"]; }
 
 /*
@@ -918,13 +812,22 @@ export function createEditorView({ parent, controller }) {
     const meta = controller.lineMeta[line];
     if (!meta?.id) return;
 
-    const editableTypes = [
-      'action', 'transition', 'scene_heading', 'dialogue',
-      'title', 'byline', 'date', 'source', 'copyright', 'contact'
-    ];
     if (!editableTypes.includes(meta.type)) return;
 
-    view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
+    // view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
+    queueMicrotask(() => {
+      controller.setSelected(meta.id, "none");   // fires selected-changed →
+
+      /* After any scroll has happened, open the widget, then re-check visibility. */
+      queueMicrotask(() => {
+        view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
+
+        // ensure the widget is fully on-screen
+        queueMicrotask(() =>
+          ensureElementFullyVisible(view, controller, meta.id, "down")
+        );
+      });
+    });
   });
 
   controller.addEventListener('change', e => {
@@ -945,6 +848,11 @@ export function createEditorView({ parent, controller }) {
         view.dispatch({ selection: { anchor }, scrollIntoView: true });
       }
     });
+  });
+
+  controller.addEventListener("selected-changed", e => {
+    const { newId, dir } = e.detail;
+    ensureElementFullyVisible(view, controller, newId, dir);
   });
 
   return view

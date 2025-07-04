@@ -47,10 +47,10 @@ export class EditorController extends EventTarget {
 
     // if we have no selectedId, default to first scene_heading
     if (!this.#selectedId) {
-      this.#selectedId = this.elementOrder.find(id => {
+      this.setSelected(this.elementOrder.find(id => {
         const meta = this.lineMeta[this.#elementPositions[id].start];
         return meta.type === 'scene_heading';
-      }) ?? null;
+      }) ?? null)
     }
   }
 
@@ -66,8 +66,14 @@ export class EditorController extends EventTarget {
 
   get text() { return this.lines.join("\n"); }
   get selectedId() { return this.#selectedId; }
-  setSelected(id) {
+  setSelected(id, dir="none") {
+    const old = this.#selectedId;
     this.#selectedId = id;
+    if (old !== id) {
+      this.dispatchEvent(new CustomEvent("selected-changed", {
+        detail: { oldId: old, newId: id, dir }
+      }));
+    }
   }
 
   // --- Methods ---
@@ -154,7 +160,11 @@ export class EditorController extends EventTarget {
                      prevId && orderAfter.includes(prevId) ? prevId :
                      orderAfter[0] || null;
 
-    this.setSelected(selectedId);
+    let dir = "none";
+    if (selectedId === nextId)      dir = "down";
+    else if (selectedId === prevId) dir = "up";
+
+    this.setSelected(selectedId, dir);
     return selectedId;
   }
 
@@ -177,5 +187,7 @@ export class EditorController extends EventTarget {
     return null;
   }
 
-
+  getLastElementId() {
+    return this.#elementOrder.length ? this.#elementOrder[this.#elementOrder.length - 1] : null;
+  }
 }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.018';
+const CACHE_VERSION = 'v1.019';
 const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -48,6 +48,7 @@ const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   // Views
   'src/views/editor-view.js',
   'src/views/editor-view-themes.js',
+  'src/views/editor-view-scroll-helpers.js',
 
   // Fonts
   'assets/fonts/CourierPrime.ttf',
