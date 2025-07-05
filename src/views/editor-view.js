@@ -168,6 +168,7 @@ class LitBlockWidget extends WidgetType {
         // close the widget
         view.dispatch({effects: endEdit.of(null)});
 
+        // Queue undo insert
         queueMicrotask(() => {
           const wasFresh = this.controller.consumePendingInsert(this.id);
           if (wasFresh) {
@@ -186,7 +187,7 @@ class LitBlockWidget extends WidgetType {
             };
             this.controller.addEventListener("change", restore, {once: true});
           } else {
-            // The element was an existing one – plain cancel; caret back to it.
+            // The element was an existing one – cancel; caret back to it.
             const {start} = this.controller.elementPositions[this.id];
             const pos = view.state.doc.line(start + 1).from;
             view.dispatch({selection: {anchor: pos}});
@@ -631,7 +632,7 @@ function elementSelector(controller) {
           const line = update.state.doc.lineAt(head).number - 1;
           const meta = controller.lineMeta[line];
           if (meta?.id && meta?.id !== controller.selectedId) {
-            /* defer until CM’s update cycle has finished */
+            // Defer until CM’s update cycle has finished
             queueMicrotask(() => controller.setSelected(meta.id, "none"));
           }
         }
@@ -708,8 +709,8 @@ function interceptEnter(controller){
 }
 
 export const buildExtensions = controller => [
-  logSel(controller),  // debug only
-  logCaret(),  // debug only
+  // logSel(controller),  // debug only
+  // logCaret(),  // debug only
   editingField,
   makeEditDecorationField(controller),
   interceptEnter(controller),
@@ -784,7 +785,7 @@ export function createEditorView({ parent, controller }) {
         // Open the edit widget
         view.dispatch({ effects: beginEdit.of({ id: newId }) });
 
-        // 2 · After CM has rendered the widget, scroll one frame later
+        // After CM has rendered the widget, scroll one frame later
         requestAnimationFrame(() => {
           const scrollTarget = beforeAfter === "before" ? newId : refId;
           ensureElementFullyVisible(
@@ -795,7 +796,7 @@ export function createEditorView({ parent, controller }) {
           );
         });
 
-        // move the caret
+        // Move the caret
         const { start } = controller.elementPositions[newId];
         const tx = { selection:{ anchor: view.state.doc.line(start + 1).from } };
         if (persistent) {
@@ -807,7 +808,7 @@ export function createEditorView({ parent, controller }) {
         view.dispatch(tx);
 
       };
-      // do this once, after the next change event is handled
+      // Do this once, after the next change event is handled
       controller.addEventListener("change", open, { once: true });
     }
   });
@@ -823,15 +824,14 @@ export function createEditorView({ parent, controller }) {
 
     if (!editableTypes.includes(meta.type)) return;
 
-    // view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
     queueMicrotask(() => {
-      controller.setSelected(meta.id, "none");   // fires selected-changed →
+      controller.setSelected(meta.id, "none");   // fires selected-changed
 
-      /* After any scroll has happened, open the widget, then re-check visibility. */
+      // After any scroll has happened, open the widget, then re-check visibility.
       queueMicrotask(() => {
         view.dispatch({ effects: beginEdit.of({ id: meta.id }) });
 
-        // ensure the widget is fully on-screen
+        // Ensure the widget is fully on-screen
         queueMicrotask(() =>
           ensureElementFullyVisible(view, controller, meta.id, "down")
         );
@@ -854,7 +854,6 @@ export function createEditorView({ parent, controller }) {
       const pos = controller.elementPositions[controller.selectedId]?.start;
       if (typeof pos === 'number') {
         const anchor = view.state.doc.line(pos + 1).from;
-        // view.dispatch({ selection: { anchor }, scrollIntoView: true });
         view.dispatch({ selection: { anchor } });
         ensureElementFullyVisible(view, controller, controller.selectedId, "none");
       }
