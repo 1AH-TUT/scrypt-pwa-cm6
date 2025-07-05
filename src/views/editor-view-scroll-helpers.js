@@ -1,4 +1,7 @@
 import { EditorView } from "@codemirror/view";
+import { StateEffect } from "@codemirror/state";
+
+export const touchViewport = StateEffect.define();   // no-op
 
 /** @typedef { import("../controllers/editor-controller").EditorController } EditorController */
 
@@ -30,11 +33,16 @@ function checkVisibility(view, firstPos, lastPos, margin) {
  * Scrolls the editor just enough to guarantee that every visual line belonging to `elementId` is fully inside the viewport,
  * leaving exactly one blank-line of padding on whichever edge becomes visible.
  *
- * 1. Primary nudge: immediately calls `scrollIntoView(firstPos, "nearest")` so the element’s head is on-screen as soon as possible.
+ * 1. Primary nudge: immediately calls `scrollIntoView(firstPos, "nearest")` so the element’s head is rendered on-screen as soon as possible.
  * 2. Secondary check: after CM has finished the first scroll:
  *    - re-measure the element’s head and tail relative to the scroller
  *    - if either edge is still clipped by more than `margin` pixels, dispatch a second `scrollIntoView`
  *    - if both edges are clipped (element taller than viewport) fallback to centring the element
+ *
+ * Note 1: The two-step dance is required because CodeMirror 6 only renders the viewport plus a small buffer; we need the head rendered
+ *         before we can measure the tail reliably.
+ * Note 2: This function is always invoked after an editor controller `selected-changed` event and all paths must trigger a dispatch
+ *         to ensure a view update cycle, even if no scroll is required: otherwise, upstream clients would have that burden...
  *
  * Debounce: `pendingTailTask` ensures at most one micro-task is queued at a time, so rapid caret movement doesn't flood the event loop
  *
@@ -54,6 +62,14 @@ export function ensureElementFullyVisible(view, controller, elementId, dir = "do
 
   const firstPos = doc.line(pos.start + 1).from;
   const lastPos= doc.line(pos.end + 1).to - 1;
+
+  const { needsHeadScroll, needsTailScroll } = checkVisibility(view, firstPos, lastPos, margin);
+  if (!needsHeadScroll && !needsTailScroll) {
+    // Element already fully visible – dispatch a no-op effect so that plugins depending on controller.selectedId get a fresh update cycle,
+    // then bale
+    view.dispatch({ effects: touchViewport.of(null) });
+    return;
+  }
 
   // Nudge top into view
   console.debug("ensureElementFullyVisible - initial nudge")

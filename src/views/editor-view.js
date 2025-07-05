@@ -168,20 +168,31 @@ class LitBlockWidget extends WidgetType {
         // close the widget
         view.dispatch({effects: endEdit.of(null)});
 
-        // Queue undo insert
         queueMicrotask(() => {
-          // Yank if freshly added and user backed out
-          if (this.controller.consumePendingInsert(this.id)) {
+          const wasFresh = this.controller.consumePendingInsert(this.id);
+          if (wasFresh) {
+            // Element never committed – remove it.
             this.controller.deleteElement(this.id, {deleteFullScene: false});
-            return;
+
+            // After controller flushes the deletion, restore caret/scroll to the newly selectedId (usually the original element) and scroll just-enough
+            const restore = () => {
+              this.controller.removeEventListener("change", restore);
+              const id = this.controller.selectedId;
+              const {start} = this.controller.elementPositions[id];
+              const anchor = view.state.doc.line(start + 1).from;
+              view.dispatch({selection: {anchor}});
+              ensureElementFullyVisible(view, this.controller, id, "up");
+              view.focus();
+            };
+            this.controller.addEventListener("change", restore, {once: true});
+          } else {
+            // The element was an existing one – plain cancel; caret back to it.
+            const {start} = this.controller.elementPositions[this.id];
+            const pos = view.state.doc.line(start + 1).from;
+            view.dispatch({selection: {anchor: pos}});
+            requestAnimationFrame(() => view.focus());
           }
         });
-
-        // Restore selection/focus
-        const {start} = this.controller.elementPositions[this.id];
-        const pos = view.state.doc.line(start + 1).from;
-        view.dispatch({selection: {anchor: pos}});
-        requestAnimationFrame(() => view.focus());
       });
 
       el.addEventListener('save', e => {
@@ -487,36 +498,73 @@ function screenplayLayout(controller) {
 
 // Navigation
 function elementNavigator(controller) {
-  const gotoElement = (view, targetId, dir = "down") => {
-    if (targetId === "_insert_bar_") {
-      view.dom.querySelector(".cm-insert-bar button")?.focus();
-      return;
+  /**
+  * @function gotoElement
+  * Handles controller selection and editor caret placement
+  * @param {EditorView} view the active CM view
+  * @param {string} id Id of target element
+  * @param {"up"|"down"|"none"} dir hint at direction of caret movement
+  * @param {object} [opts]
+  * @param {boolean} [opts.centre]  – always-centre over-ride for default scrollIntoView behaviour
+  */
+  const gotoElement = (view, id, dir = "none", { centre = false } = {}) => {
+    if (id === "_insert_bar_") {
+     view.dom.querySelector(".cm-insert-bar button")?.focus();
+     return;
     }
 
-    // Mark selection – triggers the selected-changed handler
-    controller.setSelected(targetId, dir);
+    // Mark selection in controller – triggers the selected-changed handler
+    controller.setSelected(id, dir);
 
-    // Move the CM caret
-    const { start } = controller.elementPositions[targetId];
-    const anchor    = view.state.doc.line(start + 1).from;
-    view.dispatch({ selection: { anchor } });
-  }
+    // Calculate the CM caret position
+    const { start } = controller.elementPositions[id];
+    const anchor = view.state.doc.line(start + 1).from;
+
+    // Build the transaction
+    const transaction = { selection: { anchor } };
+    // Centre if asked (note: will be layered on top of default scrollIntoView triggered by the selected-changed handler)
+    if (centre) transaction["effects"] = [EditorView.scrollIntoView(view.state.doc.line(start + 1).from, { y: "center" })];
+
+    view.dispatch(transaction);
+  };
 
   const move = dir => view => {
-    const ids = getElementOrder(controller);
+    if (inInsertBar()) return false;
 
-    // Get the element currently selected
-    let curId = controller.selectedId;
-    if (curId == null) {
-      const headLine = view.state.doc.lineAt(view.state.selection.main.head).number - 1;
-      curId = controller.lineMeta[headLine]?.id ?? ids[0];
-    }
-
-    const idx   = ids.indexOf(curId);
-    const next  = ids[(idx + (dir === "down" ? 1 : ids.length - 1)) % ids.length];
+    const ids  = getElementOrder(controller);
+    const cur  = controller.selectedId
+               ?? controller.lineMeta[view.state.doc.lineAt(
+                    view.state.selection.main.head).number - 1]?.id
+               ?? ids[0];
+    const next = ids[(ids.indexOf(cur) + (dir === "down" ? 1 : ids.length - 1)) % ids.length];
     gotoElement(view, next, dir);
     return true;
   };
+
+  const gotoFirst = view => gotoElement(view, getElementOrder(controller)[0],  "up");
+
+  const gotoLast  = view => gotoElement(view, getElementOrder(controller).at(-2), "down");
+
+  const gotoNextScene = view => {
+    const id = controller.getNextSceneHeadingId(controller.selectedId);
+    if (!id) return false;
+    gotoElement(view, id, "down", { centre: true });
+    return true;
+  };
+
+  const gotoPrevScene = view => {
+    const id = controller.getPreviousSceneHeadingId(controller.selectedId);
+    if (!id) return false;
+    gotoElement(view, id, "up", { centre: true });
+    return true;
+  }
+
+  const deleteElement = () => {
+    const id = controller.selectedId;
+    if (!id) return false;
+    controller.deleteElement(id, { deleteFullScene: false });
+    return true;
+  }
 
   const doInsertPlaceholder = (view, loc, curId, posInfo) => {
     const doc = view.state.doc;
@@ -546,7 +594,7 @@ function elementNavigator(controller) {
     const ids = getElementOrder(controller);
     const lastId = ids.at(-2);  // before _insert_bar_
     if (loc === "below" && curId === lastId) {
-      gotoElement(view, "_insert_bar_");
+      gotoElement(view, "_insert_bar_", "down");
       return true;
     }
 
@@ -556,67 +604,15 @@ function elementNavigator(controller) {
 
   const inInsertBar = () => !!document.activeElement?.closest(".cm-insert-bar");
 
-  const gotoFirst = view => {
-    const firstId = getElementOrder(controller)[0];
-
-    // Mark selection – triggers the selected-changed handler
-    controller.setSelected(firstId, "up");
-
-    // Move the CM caret
-    const { start } = controller.elementPositions[firstId];
-    const anchor = view.state.doc.line(start + 1).from;
-    view.dispatch({ selection: { anchor } });
-    return true;
-  };
-
-  const gotoLast = view => {
-    const lastId = getElementOrder(controller).at(-2);  // skip insert_bar
-
-    // Mark selection – triggers the selected-changed handler
-    controller.setSelected(lastId, "down");
-
-    // Move the CM caret
-    const { start } = controller.elementPositions[lastId];
-    const anchor = view.state.doc.line(start + 1).from;
-    view.dispatch({ selection: { anchor } });
-    return true;
-  };
-
-  const gotoNextScene = view => {
-    const nextId = controller.getNextSceneHeadingId(controller.selectedId);
-    if (nextId) {
-      gotoElement(view, nextId, "down");
-      return true;
-    }
-    return false;
-  }
-
-  const gotoPrevScene = view => {
-    const prevId = controller.getPreviousSceneHeadingId(controller.selectedId);
-    if (prevId) {
-      gotoElement(view, prevId, "up");
-      return true;
-    }
-    return false;
-  }
-
-  const deleteElement = () => {
-    const id = controller.selectedId;
-    if (!id) return false;
-
-    controller.deleteElement(id, { deleteFullScene: false });
-    return true;
-  }
-
   return keymap.of([
-    { key: "Tab",         run: view => { if (inInsertBar()) return false; return move("down")(view); } },
-    { key: "Shift-Tab",   run: view => { if (inInsertBar()) return false; return move("up")(view); } },
-    { key: "Home",        run: gotoFirst,     preventDefault: true },
-    { key: "End",         run: gotoLast ,     preventDefault: true },
-    { key: "PageUp",      run: gotoPrevScene, preventDefault: true },
-    { key: "PageDown",    run: gotoNextScene, preventDefault: true },
-    { key: "Delete",      run: deleteElement, preventDefault: true },
-    { key: "Backspace",   run: deleteElement, preventDefault: true },
+    { key: "Tab",         run: move("down"),  preventDefault: true },
+    { key: "Shift-Tab",   run: move("up"),    preventDefault: true },
+    { key: "Home",        run: gotoFirst,         preventDefault: true },
+    { key: "End",         run: gotoLast ,         preventDefault: true },
+    { key: "PageUp",      run: gotoPrevScene,     preventDefault: true },
+    { key: "PageDown",    run: gotoNextScene,     preventDefault: true },
+    { key: "Delete",      run: deleteElement,     preventDefault: true },
+    { key: "Backspace",   run: deleteElement,     preventDefault: true },
     { key: "Alt-n",       run: insertPlaceholder("below"), preventDefault: true },
     { key: "Alt-Shift-n", run: insertPlaceholder("above"), preventDefault: true },
     // extra keys for mac...
@@ -712,8 +708,8 @@ function interceptEnter(controller){
 }
 
 export const buildExtensions = controller => [
-  // logSel(controller),  // debug only
-  // logCaret(),  // debug only
+  logSel(controller),  // debug only
+  logCaret(),  // debug only
   editingField,
   makeEditDecorationField(controller),
   interceptEnter(controller),
@@ -785,18 +781,31 @@ export function createEditorView({ parent, controller }) {
       const open = () => {
         controller.removeEventListener("change", open);
 
-        // Ensure anchor visibility relative to *refId* (the element we inserted around)
-        ensureElementFullyVisible(view, controller, refId);
-
+        // Open the edit widget
         view.dispatch({ effects: beginEdit.of({ id: newId }) });
 
-        const { start } = controller.elementPositions[newId];
-        view.dispatch({
-          selection: { anchor: view.state.doc.line(start + 1).from },
-          ...(persistent  // If we came from the permanent insert bar, always scroll to doc end and some for good measure
-            ? { effects: EditorView.scrollIntoView(view.state.doc.length, { y: "end", yMargin: 500 }) }
-            : { scrollIntoView: true })
+        // 2 · After CM has rendered the widget, scroll one frame later
+        requestAnimationFrame(() => {
+          const scrollTarget = beforeAfter === "before" ? newId : refId;
+          ensureElementFullyVisible(
+           view,
+           controller,
+           scrollTarget,
+           beforeAfter === "before" ? "up" : "down"
+          );
         });
+
+        // move the caret
+        const { start } = controller.elementPositions[newId];
+        const tx = { selection:{ anchor: view.state.doc.line(start + 1).from } };
+        if (persistent) {
+          tx.effects = EditorView.scrollIntoView(
+            view.state.doc.length,
+            { y:"end", yMargin:500 }
+          );
+        }
+        view.dispatch(tx);
+
       };
       // do this once, after the next change event is handled
       controller.addEventListener("change", open, { once: true });
@@ -845,7 +854,9 @@ export function createEditorView({ parent, controller }) {
       const pos = controller.elementPositions[controller.selectedId]?.start;
       if (typeof pos === 'number') {
         const anchor = view.state.doc.line(pos + 1).from;
-        view.dispatch({ selection: { anchor }, scrollIntoView: true });
+        // view.dispatch({ selection: { anchor }, scrollIntoView: true });
+        view.dispatch({ selection: { anchor } });
+        ensureElementFullyVisible(view, controller, controller.selectedId, "none");
       }
     });
   });
