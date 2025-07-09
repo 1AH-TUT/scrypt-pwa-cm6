@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.020';
+const CACHE_VERSION = 'v1.021';
 const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -18,6 +18,7 @@ const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'src/components/edit-dialogue.js',
   'src/components/edit-title-input.js',
   'src/components/edit-title-contact.js',
+  'src/components/new-scrypt-drawer.js',
 
   // Controllers
   'src/controllers/editor-controller.js',

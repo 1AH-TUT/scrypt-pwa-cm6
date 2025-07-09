@@ -3,6 +3,8 @@ import { validateScrypt } from '../data-layer/validator.js';
 import { saveScrypt, deleteScrypt, getAllScryptMetas } from "../data-layer/db.js";
 import { exportScript, hasNativeSaveDialog } from "../services/export-service.js";
 
+import '../components/new-scrypt-drawer.js';
+
 
 export default function makeWorkspacePage() {
   const wrapper = document.createElement("div");
@@ -38,6 +40,29 @@ export default function makeWorkspacePage() {
   message.className = "workspace-message";
   wrapper.appendChild(message);
 
+
+  // New-Scrypt drawer
+  const section3 = document.createElement("h3");
+  section3.textContent = "Start new Scrypt file";
+  wrapper.appendChild(section3);
+
+  const drawer = document.createElement('new-scrypt-drawer');
+  drawer.addEventListener('drawer-toggle', e => { newBtn.disabled = e.detail.open; });
+  wrapper.appendChild(drawer);
+
+  // Toolbar
+  const toolbar = document.createElement('div');
+  toolbar.style.display = 'flex';
+  toolbar.style.gap   = '0.6rem';
+
+  // New-script button
+  const newBtn = Object.assign(document.createElement('button'), {
+    textContent: 'New Script',
+    onclick () { drawer.open = true; }
+  });
+  toolbar.appendChild(newBtn);
+  wrapper.appendChild(toolbar);
+
   // Container for the list
   const section2 = document.createElement("h3");
   section2.textContent = "Scrypts in Local Storage";
@@ -52,9 +77,6 @@ export default function makeWorkspacePage() {
     list.replaceChildren();
     const scripts = await getAllScryptMetas();
     scripts.forEach(s => {
-      // const li = document.createElement("li");
-      // li.textContent = (s.titlePage?.title ?? `Script #${s.id}`);
-      // One row
       const row = document.createElement("div");
       row.className = "workspace-row";
 
