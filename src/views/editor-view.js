@@ -8,6 +8,7 @@
 import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import { EditorView, ViewPlugin, Decoration, keymap, WidgetType } from "@codemirror/view";
 
+import { TITLE_PAGE_FIELDS } from '../scrypt/fields.js';
 import { ensureElementFullyVisible } from './editor-view-scroll-helpers.js'
 import '../components/edit-action.js';
 import '../components/edit-transition.js';
@@ -143,22 +144,14 @@ class LitBlockWidget extends WidgetType {
       const value = elObj.text;
       if (field === 'contact') {
         el = document.createElement('edit-title-contact');
-        el.field = 'contact';
-        el.value = value;
-        el.required = false;
-        el.placeholder = "Contact details";
       } else {
         el = document.createElement('edit-title-input');
-        el.field = field;
-        el.value = value;
-        el.align = (field === 'date' || field === 'contact') ? 'right' : (field === 'copyright') ? 'left' : 'center';
-        el.required = (field === 'title' || field === 'byline');
-        if (field === 'title')       el.placeholder = "Screenplay Title (required)";
-        else if (field === 'byline')  el.placeholder = "Byline — e.g. Written by [Name], Draft Note, or Director Credit (required)";
-        else if (field === 'source')  el.placeholder = "Adapted from (novel, play, true events), Original Story, or Additional Note";
-        else if (field === 'copyright') el.placeholder = "Copyright notice — e.g. © Year Name or Production Company";
-        else if (field === 'date') el.placeholder = "Date — e.g., 1 Jan 2024";
       }
+      el.align = (field === 'date') ? 'right' : (field === 'copyright' || field === 'contact') ? 'left' : 'center';
+      el.required = (field === 'title' || field === 'byline');
+      el.value = value;
+      el.field = field;
+      el.placeholder = TITLE_PAGE_FIELDS.find(f => f.key === field)?.placeholder ?? "";
     }
 
     if (el){
