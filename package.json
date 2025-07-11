@@ -14,7 +14,6 @@
   },
   "exports": {
     ".": "./src/main.js",
-    "./app-sidebar": "./src/components/app-sidebar.js",
-    "./editor-setup": "./src/editor-setup.js"
+    "./app-sidebar": "./src/components/app-sidebar.js"
   }
 }
