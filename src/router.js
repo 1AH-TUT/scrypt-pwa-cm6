@@ -13,6 +13,10 @@ export function mountPage(name) {
 
   let pageEl;
   switch (name) {
+    case "new":
+      pageEl = pages.newScrypt();
+      break;
+
     case "editor":
       pageEl = pages.editor();
       break;

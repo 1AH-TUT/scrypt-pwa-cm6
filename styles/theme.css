@@ -225,40 +225,4 @@ html, body, #app-shell {
 /* Workspace page                                                         */
 /*───────────────────────────────────────────────────────────────────────*/
 
-.workspace-page {
-  margin: 0 1em;
-}
-
-.workspace-page h3 {
-  margin-top: 2em;
-}
-
-.workspace-message {
-  margin: 0.5em 0;
-}
-
-.workspace-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3em;
-  width: max-content;
-  min-width: 500px;
-}
-
-.workspace-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: center;
-  column-gap: 0.4em;
-  padding: 0.2em 0;
-  width: 100%;
-}
-
-.workspace-row button {
-  padding: 0.2em 0.6em;
-}
-
-.workspace-row:hover {
-  background: color-mix(in srgb, currentColor 10%, transparent);
-}
 

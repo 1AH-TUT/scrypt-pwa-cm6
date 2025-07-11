@@ -1,150 +1,128 @@
-// src/pages/workspace.js
+import { LitElement, html, css } from 'lit';
 import { validateScrypt } from '../data-layer/validator.js';
 import { saveScrypt, deleteScrypt, getAllScryptMetas } from "../data-layer/db.js";
 import { exportScript, hasNativeSaveDialog } from "../services/export-service.js";
 
-import '../components/new-scrypt-drawer.js';
+import { PageBase } from '../components/page-base.js';
 
+export class WorkspacePage extends PageBase {
+  static styles = [
+    PageBase.styles,
+    css`
+      .workspace-page h3 { margin-top: 2em; }
+      
+      .workspace-message { margin: 0.5em 0; }
+      
+      .workspace-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3em;
+        width: max-content;
+        min-width: 500px;
+      }
+      
+      .workspace-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+        align-items: center;
+        column-gap: 0.4em;
+        padding: 0.2em 0;
+        width: 100%;
+      }
+      
+      .workspace-row button { padding: 0.2em 0.6em; }
+      
+      .workspace-row:hover { background: color-mix(in srgb, currentColor 10%, transparent);}
+    `
+  ];
 
-export default function makeWorkspacePage() {
-  const wrapper = document.createElement("div");
-  wrapper.className = "workspace-page";
-  
-  // Title
-  const title = document.createElement("h2");
-  title.textContent = "🗂 Workspace";
-  wrapper.appendChild(title);
+  static properties = { };
 
-  // Local-storage notice
-  const notice = document.createElement("p");
-  notice.className = "workspace-notice";
-  notice.innerHTML = `
-   <strong>Note:</strong> Everything in this workspace is saved locally in your browser and will remain available even after closing the app or restarting your device.<br/>
-   Scrypts stored here won’t be available on other devices or browsers, and clearing site data will remove them.<br/>
-   Use <b>Export / Download</b> to create backup or portable copies.<br/>
-  `;
-  wrapper.appendChild(notice);
-
-  const section1 = document.createElement("h3");
-  section1.textContent = "Import Scrypt file";
-  wrapper.appendChild(section1);
-
-  // File input
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".scrypt";
-  wrapper.appendChild(fileInput);
-
-  // Placeholder for validation/errors
-  const message = document.createElement("div");
-  message.className = "workspace-message";
-  wrapper.appendChild(message);
-
-
-  // New-Scrypt drawer
-  const section3 = document.createElement("h3");
-  section3.textContent = "Start new Scrypt file";
-  wrapper.appendChild(section3);
-
-  const drawer = document.createElement('new-scrypt-drawer');
-  drawer.addEventListener('drawer-toggle', e => { newBtn.disabled = e.detail.open; });
-  wrapper.appendChild(drawer);
-
-  // Toolbar
-  const toolbar = document.createElement('div');
-  toolbar.style.display = 'flex';
-  toolbar.style.gap   = '0.6rem';
-
-  // New-script button
-  const newBtn = Object.assign(document.createElement('button'), {
-    textContent: 'New Script',
-    onclick () { drawer.open = true; }
-  });
-  toolbar.appendChild(newBtn);
-  wrapper.appendChild(toolbar);
-
-  // Container for the list
-  const section2 = document.createElement("h3");
-  section2.textContent = "Scrypts in Local Storage";
-  wrapper.appendChild(section2);
-
-  const list = document.createElement("div");
-  list.className = "workspace-grid";
-  wrapper.appendChild(list);
-
-  // Render the current scripts in DB
-  async function refreshList() {
-    list.replaceChildren();
-    const scripts = await getAllScryptMetas();
-    scripts.forEach(s => {
-      const row = document.createElement("div");
-      row.className = "workspace-row";
-
-      // Title / fallback
-      const title = document.createElement("span");
-      title.textContent = s.titlePage?.title ?? `Script #${s.id}`;
-      row.appendChild(title);
-
-      // Load button
-      const loadBtn = document.createElement("button");
-      loadBtn.textContent = "Open";
-      loadBtn.onclick = () =>
-        wrapper.dispatchEvent(new CustomEvent('open-scrypt', {
-          detail: { id: s.id, view: 'editor' },
-          bubbles: true, composed: true
-        }));
-      row.appendChild(loadBtn);
-
-      // Export button
-      const expBtn = document.createElement("button");
-      expBtn.textContent = hasNativeSaveDialog ? "Export" : "Download";
-      expBtn.onclick = () => exportScript({ id: s.id, format: "scrypt" });
-      row.appendChild(expBtn);
-
-
-      // Delete button
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "Remove";
-      delBtn.onclick = async () => {
-        await deleteScrypt(s.id);
-        refreshList();
-      };
-      row.appendChild(delBtn);
-
-      list.appendChild(row);
-    });
+  constructor() {
+    super();
+    this._scripts = [];
+    this._msg = '';
+    this._msgColor = 'inherit';
   }
 
-   // Handle file selection
-  fileInput.addEventListener("change", async () => {
+  render() {
+    return html`<h2>🗂 Workspace</h2>
+      <p class="workspace-notice">
+        <strong>Note:</strong> Everything in this workspace is saved locally in your browser and will remain available even after closing the app or restarting your device.<br/>
+        Scrypts stored here won’t be available on other devices or browsers, and clearing site data will remove them.<br/>
+        Use <b>Export / Download</b> to create backup or portable copies.<br/>
+      </p>
+
+      <h3>Import Scrypt file</h3>
+      <input id="fileInput" type="file" accept=".scrypt" @change=${this._importFile} />
+      <div class="workspace-message" style="color: ${this._msgColor}">${this._msg}</div>
+
+      <h3>Start new Scrypt</h3>
+      <button ?disabled=${this.drawerOpen} @click=${() => this.dispatchEvent(new CustomEvent('nav', { detail:'new', bubbles:true, composed:true }))}>New Script</button>
+
+      <h3>Scrypts in Local Storage</h3>
+      <div class="workspace-grid">
+        ${this._scripts.map(s => html`
+          <div class="workspace-row">
+            <span>${s.titlePage?.title ?? `Script #${s.id}`}</span>
+            <button @click=${() => this._openScrypt(s.id)}>Open</button>
+            <button @click=${() => exportScript({ id: s.id, format: "scrypt" })}>
+              ${hasNativeSaveDialog ? "Export" : "Download"}
+            </button>
+            <button @click=${() => this._deleteScrypt(s.id)}>Remove</button>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._refreshList();
+  }
+
+  async _refreshList() {
+    this._scripts = await getAllScryptMetas();
+    this.requestUpdate();
+  }
+
+  async _deleteScrypt(id) {
+    await deleteScrypt(id);
+    await this._refreshList();
+  }
+
+  _openScrypt(id) {
+    this.dispatchEvent(new CustomEvent('open-scrypt', {
+      detail: { id, view: 'editor' },
+      bubbles: true, composed: true
+    }));
+  }
+
+
+  async _importFile(e) {
+    const fileInput = e.target;
     const file = fileInput.files[0];
     if (!file) return;
     try {
       const text = await file.text();
       const obj = JSON.parse(text);
-
       const { ok, errors } = await validateScrypt(obj);
-      if (!ok) {
-        const msg = errors.map(e => `${e.instancePath} ${e.message}`).join('; ');
-        throw new Error(`Invalid screenplay JSON: ${msg}`);
-      }
-
+      if (!ok) throw new Error(errors.map(e => `${e.instancePath} ${e.message}`).join('; '));
       delete obj.id;
       const id = await saveScrypt(obj);
-
-      message.textContent = `Imported script with ID ${id}.`;
-      message.style.color = "green";
+      this._msg = `Imported script with ID ${id}.`;
+      this._msgColor = "green";
       fileInput.value = "";
-      await refreshList();
     } catch (err) {
-      console.error(err);
-      message.textContent = `Error importing file: ${err.message}`;
-      message.style.color = "red";
+      this._msg = `Error importing file: ${err.message}`;
+      this._msgColor = "red";
+    } finally {
+      await this._refreshList();
     }
-  });
-
-  // Initial population
-  refreshList();
-
-  return wrapper;
+  }
 }
+
+customElements.define('workspace-page', WorkspacePage);
+
+// Export a factory for router
+export default () => document.createElement('workspace-page');

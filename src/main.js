@@ -10,7 +10,7 @@ import { exportScript } from "./services/export-service.js";
 if (!window.__scryptPwaBooted) {
     window.__scryptPwaBooted = true;
 
-    document.querySelector("app-sidebar").addEventListener("nav", ev => {
+    window.addEventListener("nav", ev => {
       // console.log("Nav event:", ev.detail);
       mountPage(ev.detail);
     });

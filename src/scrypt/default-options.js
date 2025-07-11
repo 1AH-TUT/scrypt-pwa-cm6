@@ -1,3 +1,4 @@
+
 export const DEFAULT_OPTIONS = {
   transition: [
     "CUT TO:", "DISSOLVE TO:", "SMASH CUT TO:", "MATCH CUT TO:",
@@ -6,3 +7,14 @@ export const DEFAULT_OPTIONS = {
   indicator: ["INT.", "EXT.", "INT./EXT."],
   time: ["DAY", "NIGHT", "DAWN", "DUSK", "CONTINUOUS", "LATER"],
 };
+
+const blankTemplate = {
+  titlePage: { title: '', byline: '', date:'', source:'', copyright:'', contact:'' },
+  data: { scenes: [
+      { id:'s0', elements:[{"type": "transition", "text": "FADE IN:", "id": "se1" },] },
+      { id:'s1', elements:[{"type": "scene_heading", "indicator": "INT.","location": "","time": "", "text": "INT.", "id": "se2" },] },
+    ] },
+  metaData: { schemaVer:'0.1', nextId:3 }
+};
+
+export const getBlankTemplate = () => { return structuredClone(blankTemplate) };

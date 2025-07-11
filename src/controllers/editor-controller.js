@@ -107,9 +107,7 @@ export class EditorController extends EventTarget {
 
     this.reindex();
     this.#pendingDetails = [];
-    this.dispatchEvent(new CustomEvent("change", {
-      detail: { selectedId: this.#selectedId }
-    }));
+    this.dispatchEvent(new CustomEvent("change", { detail: { selectedId: this.#selectedId } }));
   }
 
   getNextSceneHeadingId(currentElementId) {
