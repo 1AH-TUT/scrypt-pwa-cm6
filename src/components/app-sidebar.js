@@ -63,7 +63,7 @@ export class AppSidebar extends LitElement {
 
   constructor() {
     super();
-    this.open = true;
+    this.open = false;
     this.loaded = hasCurrentScrypt();
   }
 
