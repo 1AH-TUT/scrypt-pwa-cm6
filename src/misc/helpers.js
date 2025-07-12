@@ -4,7 +4,7 @@
 export function prettyDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString(navigator.languages, {
     day:   'numeric',
     month: 'short',
     year:  'numeric'
