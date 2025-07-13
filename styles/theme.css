@@ -72,15 +72,15 @@
 
   /* luminosity - page / chrome */
   --lum-bg-light: 90%;
-  --lum-bg-dark : 8%;
+  --lum-bg-dark: 8%;
   --lum-fg-light: 33%;
-  --lum-fg-dark : 78%;
+  --lum-fg-dark: 78%;
 
   /* luminosity - editor page */
   --lum-bg-edit-light: 94%;
-  --lum-bg-edit-dark : 14%;
+  --lum-bg-edit-dark: 14%;
   --lum-fg-edit-light: 12%;
-  --lum-fg-edit-dark : 92%;
+  --lum-fg-edit-dark: 92%;
 
   /* page-level fonts & colors */
   --bg-page: light-dark(
@@ -105,7 +105,7 @@
 
   /* Screenplay editor typography */
   --font-screenplay: "Courier Prime", Courier, monospace;
-  --font-ui: "Courier Prime Sans", "Courier Prime", monospace;
+  --font-ui: system-ui, sans-serif;
   --font-size-screenplay: 12pt;
   --font-size-screenplay-title: 12pt;
 
@@ -133,29 +133,27 @@
   --cm-insert-bar-btn-active-fg: #00000f;
 }
 
-
 /*────────────────────────────────────────────────────────*/
 /* Media queries                                         */
 /*──────────────────────────────────────────────────────*/
 
 @media (prefers-contrast: less) {
-    :root {
-      --lum-bg-edit-dark : 18%;
-      --lum-fg-edit-dark : 88%;
-      --lum-bg-edit-light : 90%;
-      --lum-fg-edit-light : 20%;
-    }
+  :root {
+    --lum-bg-edit-dark: 18%;
+    --lum-fg-edit-dark: 88%;
+    --lum-bg-edit-light: 90%;
+    --lum-fg-edit-light: 20%;
+  }
 }
 
 @media (prefers-contrast: more) {
-    :root {
-      --lum-bg-edit-dark : 10%;
-      --lum-fg-edit-dark : 100%;
-      --lum-bg-edit-light : 96%;
-      --lum-fg-edit-light : 8%;
-    }
+  :root {
+    --lum-bg-edit-dark: 10%;
+    --lum-fg-edit-dark: 100%;
+    --lum-bg-edit-light: 96%;
+    --lum-fg-edit-light: 8%;
+  }
 }
-
 
 /*─────────────────────────────────────────────────────────────────────────*/
 /* Base defaults for html, body, and main layout                          */
@@ -261,4 +259,3 @@ html, body, #app-shell {
 .workspace-row:hover {
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
-

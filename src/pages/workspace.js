@@ -7,10 +7,10 @@ import { exportScript, hasNativeSaveDialog } from "../services/export-service.js
 export default function makeWorkspacePage() {
   const wrapper = document.createElement("div");
   wrapper.className = "workspace-page";
-  
+
   // Title
   const title = document.createElement("h2");
-  title.textContent = "🗂 Workspace";
+  title.textContent = "Workspace";
   wrapper.appendChild(title);
 
   // Local-storage notice
@@ -93,7 +93,7 @@ export default function makeWorkspacePage() {
     });
   }
 
-   // Handle file selection
+  // Handle file selection
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
     if (!file) return;
