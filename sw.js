@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.023';
+const CACHE_VERSION = 'v1.024';
 const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -18,7 +18,8 @@ const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'src/components/edit-dialogue.js',
   'src/components/edit-title-input.js',
   'src/components/edit-title-contact.js',
-  'src/components/new-scrypt-drawer.js',
+  'src/components/page-base.js',
+  'src/components/field-row.js',
 
   // Controllers
   'src/controllers/editor-controller.js',
@@ -69,7 +70,8 @@ const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'assets/icons/apple-touch-icon.png',
   'assets/icons/favicon-32.png',
   'assets/icons/icon-192.png',
-  'assets/icons/icon-512.png'
+  'assets/icons/icon-512.png',
+  'assets/img/sprites.svg'
 ];
 
 // During install, cache the app shell

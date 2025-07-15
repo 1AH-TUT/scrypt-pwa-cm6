@@ -1,13 +1,13 @@
 import { LitElement, html, css } from "lit";
 import { hasCurrentScrypt } from "../state/current-scrypt.js";
 import { exportScript, hasNativeSaveDialog } from "../services/export-service.js";
-import {getCurrentScriptId} from "../state/state.js";
+import { getCurrentScriptId } from "../state/state.js";
 
 export class AppSidebar extends LitElement {
   static properties = {
     open: { type: Boolean, reflect: true },
-    page:   { type: String   },
-    loaded: { type: Boolean  }
+    page: { type: String },
+    loaded: { type: Boolean }
   };
 
   static styles = css`
@@ -22,6 +22,7 @@ export class AppSidebar extends LitElement {
       width: var(--app-sidebar-width, 220px);
       transition: width var(--app-sidebar-transition-ease, 0.2s ease);
       box-sizing: border-box;
+      font-family: system-ui, sans-serif;
     }
     header {
       height: 3rem;
@@ -45,6 +46,8 @@ export class AppSidebar extends LitElement {
       text-decoration: none;
       color: inherit;
       cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.25px;
     }
     button.hamburger {
       all: unset;
@@ -59,6 +62,12 @@ export class AppSidebar extends LitElement {
     :host(:not([open])) nav span {
       display: none;
     }
+    .sidebar-icon {
+      fill: currentColor;
+      width: 1.5rem;
+      aspect-ratio: 1;
+      flex-shrink: 0;
+    }
   `;
 
   constructor() {
@@ -69,12 +78,12 @@ export class AppSidebar extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    window.addEventListener("scrypt-changed",  this.#syncState);
-    window.addEventListener("page-changed",    this.#onPage);
+    window.addEventListener("scrypt-changed", this.#syncState);
+    window.addEventListener("page-changed", this.#onPage);
   }
   disconnectedCallback() {
     window.removeEventListener("scrypt-changed", this.#syncState);
-    window.removeEventListener("page-changed",   this.#onPage);
+    window.removeEventListener("page-changed", this.#onPage);
     super.disconnectedCallback();
   }
 
@@ -98,22 +107,23 @@ export class AppSidebar extends LitElement {
     const { loaded, page } = this;
 
     // Conditional links
-    const editorLink   = (loaded && page !== "editor") ? html`<a @click=${() => this.#go("editor")}>📄 <span>Editor</span></a>` : null;
+    const editorLink = (loaded && page !== "editor") ? html`<a @click=${() => this.#go("editor")}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#editor"></use></svg><span>Editor</span></a>` : null;
 
-    const exportLink   = (loaded && page === "editor") ? html`
+    const locationsLink = (loaded && page === "editor") ? html`<a @click=${() => this.#go("location")}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#locations"></use></svg><span>Locations</span></a>` : null;
+
+    const exportLink = (loaded && page === "editor") ? html`
       <a
         @click=${() => exportScript({ id: getCurrentScriptId(), format: "scrypt" })}
-        aria-label="Export current script">
-        ⬇️ <span>${hasNativeSaveDialog ? "Export" : "Download"}</span>
+        aria-label="Export current script"><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#export"></use></svg><span>${hasNativeSaveDialog ? "Export" : "Download"}</span>
       </a>` : null;
 
     return html`
       <header>
-        <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}>☰</button>
+        <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#hamburger"></use></svg><span></button>
       </header>
 
       <nav>
-        <a @click=${() => this.#go("workspace")}>🗂 <span>Workspace</span></a>
+        <a @click=${() => this.#go("workspace")}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#workspace"></use></svg><span>Workspace</span></a>
         ${editorLink} ${exportLink}
       </nav>
     `;
