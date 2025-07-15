@@ -107,23 +107,23 @@ export class AppSidebar extends LitElement {
     const { loaded, page } = this;
 
     // Conditional links
-    const editorLink = (loaded && page !== "editor") ? html`<a @click=${() => this.#go("editor")}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#editor"></use></svg><span>Editor</span></a>` : null;
+    const editorLink = (loaded && page !== "editor") ? html`<a @click=${() => this.#go("editor")}><svg class="sidebar-icon"><use href="assets/img/sprites.svg#editor"></use></svg><span>Editor</span></a>` : null;
 
-    const locationsLink = (loaded && page === "editor") ? html`<a @click=${() => this.#go("location")}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#locations"></use></svg><span>Locations</span></a>` : null;
+    const locationsLink = (loaded && page === "editor") ? html`<a @click=${() => this.#go("location")}><svg class="sidebar-icon"><use href="assets/img/sprites.svg#locations"></use></svg><span>Locations</span></a>` : null;
 
     const exportLink = (loaded && page === "editor") ? html`
       <a
         @click=${() => exportScript({ id: getCurrentScriptId(), format: "scrypt" })}
-        aria-label="Export current script"><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#export"></use></svg><span>${hasNativeSaveDialog ? "Export" : "Download"}</span>
+        aria-label="Export current script"><svg class="sidebar-icon"><use href="assets/img/sprites.svg#export"></use></svg><span>${hasNativeSaveDialog ? "Export" : "Download"}</span>
       </a>` : null;
 
     return html`
       <header>
-        <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#hamburger"></use></svg><span></button>
+        <button class="hamburger" @click=${this.#toggle} aria-expanded=${this.open}><svg class="sidebar-icon"><use href="assets/img/sprites.svg#hamburger"></use></svg><span></button>
       </header>
 
       <nav>
-        <a @click=${() => this.#go("workspace")}><svg class="sidebar-icon"><use href="/assets/img/sprites.svg#workspace"></use></svg><span>Workspace</span></a>
+        <a @click=${() => this.#go("workspace")}><svg class="sidebar-icon"><use href="assets/img/sprites.svg#workspace"></use></svg><span>Workspace</span></a>
         ${editorLink} ${exportLink}
       </nav>
     `;
