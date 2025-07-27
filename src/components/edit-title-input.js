@@ -1,6 +1,7 @@
 // src/components/edit-title-input.js
 import { html, css } from 'lit';
 import { EditBase }   from './edit-base.js';
+import { TITLE_FIELD_RULES } from "../misc/text-sanitiser.js";
 
 /**
  * <edit-title-input
@@ -9,6 +10,8 @@ import { EditBase }   from './edit-base.js';
  * </edit-title-input>
  */
 export class EditTitleInput extends EditBase {
+  static sanitizeRules = TITLE_FIELD_RULES;
+
   static styles = [
     EditBase.styles,
     css`
@@ -35,9 +38,10 @@ export class EditTitleInput extends EditBase {
 
   _renderControl(){
     return html`<input class="inputlike title-input"
-             .value=${this.value ?? ''}
-             placeholder=${this.placeholder ?? ''}
-             @keydown=${this._onKeydown} >`;
+     .value=${this.value ?? ''}
+     placeholder=${this.placeholder ?? ''}
+     data-sanitize="default"
+     @keydown=${this._onKeydown} >`;
   }
 
   _getPatch(){

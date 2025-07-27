@@ -1,5 +1,6 @@
 import { html, css } from 'lit';
 import { EditBase }   from './edit-base.js';
+import { ACTION_RULES } from "../misc/text-sanitiser.js";
 
 /**
  * @component
@@ -11,6 +12,8 @@ import { EditBase }   from './edit-base.js';
  * @fires cancel - Event, on cancel.
  */
 export class EditAction extends EditBase {
+  static sanitizeRules = ACTION_RULES;
+
   static styles = [
     EditBase.styles,
     css`textarea { height: 10rem; border: 0; resize: vertical; }`
@@ -23,6 +26,7 @@ export class EditAction extends EditBase {
         .value=${this.value ?? ''}
         @keydown=${this._onKeydown}
         aria-label="Action description"
+        data-sanitize="action"
       ></textarea>`;
   }
 

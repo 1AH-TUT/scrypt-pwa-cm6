@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import { sanitizeText, DEFAULT_RULES } from "../misc/text-sanitiser.js";
 
 /**
  * @component
@@ -12,6 +13,7 @@ import { LitElement, html, css } from 'lit';
  * @fires cancel - Event on cancel.
  */
 export class EditBase extends LitElement {
+  static sanitizeRules = DEFAULT_RULES;
   #committed = false;
 
   static properties = {
@@ -27,6 +29,8 @@ export class EditBase extends LitElement {
       box-sizing: border-box;
       padding: 0.25em 1em;
       margin: 0.5em 0;
+      color: var(--fg-editor, currentColor);
+      caret-color: var(--fg-editor, currentColor);
     }
     .invalid { border: 2px solid #e53935; outline:2px solid #e53935; }
   `;
@@ -54,9 +58,13 @@ export class EditBase extends LitElement {
   /* ------------------------------------------ */
 
   firstUpdated() {
-    // Find the first focusable input/select/textarea and focus it
-    const el = this.shadowRoot.querySelector('input, select, textarea');
-    if (el) el.focus();
+    const textInputs = this.shadowRoot.querySelectorAll('input[data-sanitize], textarea[data-sanitize]');
+    textInputs.forEach(el => {
+      el.addEventListener('input', this._onInput);
+      el.addEventListener('paste', this._onPaste);
+    });
+    const focusables = this.shadowRoot.querySelectorAll('input, select, textarea');
+    focusables[0]?.focus();
   }
 
   render() { return this._renderControl(); }
@@ -139,13 +147,75 @@ export class EditBase extends LitElement {
       const atFirst = (e.target === first);
       const atLast  = (e.target === last);
 
-      /* If Tab would leave the widget → intercept & save */
+      // If Tab would leave the widget → intercept & save
       if ( (!e.shiftKey && atLast) || (e.shiftKey && atFirst) ) {
         e.preventDefault();
         e.stopPropagation();  // prevent CodeMirror from seeing this Tab
         this._finish('save');
       }
-      /* otherwise let Tab move within the widget (do not preventDefault) */
     }
   }
+
+  /* ---------- String sanitization ---------- */
+  _sanitize(str) {
+    const { clean } = sanitizeText(str, this.constructor.sanitizeRules);
+    return clean;
+  }
+
+  _ruleFor(el) {
+    const map = this.constructor.sanitizeRules;
+    if (!map) return DEFAULT_RULES;
+    if (map.default && typeof map === 'object') {
+      return map[el.dataset.sanitize] || map.default;
+    }
+    // legacy: single rule object
+    return map;
+  }
+
+  /* Returns { clean, caret } where caret is the index to place the caret in the cleaned string */
+  _sanitizeWithCaret(orig, inserted = '', selectionStart, selectionEnd, rules) {
+    // Build the text as the user intends it before sanitizing
+    const before    = orig.slice(0, selectionStart);
+    const after     = orig.slice(selectionEnd);
+    const intended  = before + inserted + after;
+
+    // Sanitize the whole string
+    const { clean } = sanitizeText(intended, rules);
+
+    // Sanitize only the part before the caret
+    const { clean: prefix } = sanitizeText(before + inserted, rules);
+
+    // Place the caret at the end of the sanitized prefix
+    const caret = Math.min(prefix.length, clean.length);
+
+    return { clean, caret };
+  }
+
+  _onPaste = e => {
+    e.preventDefault();
+    const ta = e.currentTarget;
+    const paste = (e.clipboardData ?? window.clipboardData).getData('text');
+    const { selectionStart, selectionEnd, value: orig } = ta;
+    const rules = this._ruleFor(ta);
+
+    const { clean, caret } = this._sanitizeWithCaret(orig, paste, selectionStart, selectionEnd, rules);
+
+    ta.value = clean;
+    ta.setSelectionRange(caret, caret);
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  _onInput = e => {
+    const ta = e.currentTarget;
+    const { selectionStart, selectionEnd, value: orig } = ta;
+    const rules = this._ruleFor(ta);
+
+    const { clean, caret } = this._sanitizeWithCaret(orig, '', selectionStart, selectionEnd, rules);
+
+    if (ta.value !== clean) {
+      ta.value = clean;
+      ta.setSelectionRange(caret, caret);
+    }
+  };
+
 }

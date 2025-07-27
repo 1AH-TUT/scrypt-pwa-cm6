@@ -1,6 +1,7 @@
 // src/components/edit-scene-heading.js
 import { html, css }  from 'lit';
 import { EditBase }   from './edit-base.js';
+import { DEFAULT_RULES, LOCATION_RULES, sanitizeText } from "../misc/text-sanitiser.js";
 
 /**
  * @component
@@ -15,6 +16,11 @@ import { EditBase }   from './edit-base.js';
  * @fires cancel - Event, on cancel.
  */
 export class EditSceneHeading extends EditBase {
+  static sanitizeRules = {
+    default : DEFAULT_RULES,
+    location: LOCATION_RULES
+  };
+
   static styles = [
     EditBase.styles,
     css`
@@ -64,7 +70,18 @@ export class EditSceneHeading extends EditBase {
     this.time      = '';
   }
 
-  /* Optional bulk setter (handy for tests) */
+  firstUpdated() {
+    // Add sanitization for the location input:
+    const locationInput = this.shadowRoot.querySelector('input.location');
+    if (locationInput) {
+      locationInput.addEventListener('input', this._onInput.bind(this));
+      locationInput.addEventListener('paste', this._onPaste.bind(this));
+    }
+    // Set the focus
+    this.shadowRoot.querySelector('input.indicator')?.focus();
+  }
+
+  /* Bulk setter (for tests) */
   set value(v) {
     if (v && typeof v === 'object') {
       this.indicator = v.indicator ?? '';
@@ -96,6 +113,7 @@ export class EditSceneHeading extends EditBase {
           list="scene-locs"
           placeholder="Location"
           aria-label="Location"
+          data-sanitize="location"
           @input=${e => (this.location = e.target.value)}
           @keydown=${this._onKeydown}
         />
@@ -124,7 +142,7 @@ export class EditSceneHeading extends EditBase {
     }
 
     const i = this.indicator.trim().toUpperCase();
-    const l = this.location.trim().toUpperCase();
+    const { clean: l, _ } = sanitizeText(this.location.trim().toUpperCase(), LOCATION_RULES);
     const t = this.time.trim().toUpperCase();
     const text = t ? `${i} ${l} - ${t}` : `${i} ${l}`;
     return { indicator: i, location: l, time: t, text };

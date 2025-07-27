@@ -40,6 +40,8 @@ class NewScryptPage extends PageBase {
             .field=${f}
             .value=${this.formData[f.key]}
             .error=${this.errors[f.key]||''}
+            rules-key=${f.key === 'contact' ? 'contact' : 'default'}
+            .autoFocus=${f.key === 'title'}
             @value-changed=${this.#updateValue}>
           </field-row>`)}
 
