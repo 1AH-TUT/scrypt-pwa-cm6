@@ -464,7 +464,7 @@ function screenplayLayout(controller) {
           copyright: "cm-center",
           contact: "cm-left",
           date: "cm-right",
-          page_break: "cm-line-break"
+          page_break: "cm-page-break"
         };
 
         let cls;
@@ -479,8 +479,13 @@ function screenplayLayout(controller) {
             Decoration.line({
               class: "cm-heading",
               attributes: { "data-scene": String(meta.sceneNo ?? "") }
-            })
-          );
+            }));
+        } else if (meta.type === "page_break") {
+          b.add(from, from,
+            Decoration.line({
+              class: "cm-page-break",
+              attributes: { "data-pg": String(meta.page ?? "") }
+            }));
         } else {
           b.add(from, from, Decoration.line({ class: cls }));
         }
