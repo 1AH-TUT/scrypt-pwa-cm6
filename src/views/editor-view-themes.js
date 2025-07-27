@@ -16,7 +16,7 @@ export const mainTheme = EditorView.baseTheme({
   ".cm-scroller": { lineHeight: "1.2", overflowY: "auto", width: "100%", height: "100%" },
   ".cm-line": { padding: "0 2 0 0", borderLeft: "3px solid transparent", position: "relative" },
   ".cm-fp-title": {
-    fontWeight: "bold", textTransform: "uppercase", textDecoration: "underline", textAlign: "center", marginTop: "1in",
+    fontWeight: "bold", textTransform: "uppercase", textDecoration: "underline", textAlign: "center",
     fontSize: "var(--font-size-screenplay-title, 16pt)"
   },
   ".cm-right": {textAlign: "right"},
@@ -35,7 +35,6 @@ export const mainTheme = EditorView.baseTheme({
   ".cm-transition": {textAlign: "right", textTransform: "uppercase"},
   ".cm-heading": {textAlign: "left", textTransform: "uppercase", fontWeight: "bold"},
 
-  ".cm-line-break::after": {content: '""', display: "block", borderBottom: "1px solid", margin: "1em 0"},
   ".cm-heading::before": {
     content: "attr(data-scene)", position: "absolute", left: "-1.4in", width: "1.2in",
     textAlign: "right", fontWeight: "bold"
@@ -80,4 +79,9 @@ export const mainTheme = EditorView.baseTheme({
     content: 'attr(data-label)', position: "absolute", left: "-1.4in", width: "1.3in", opacity: "0.9", textAlign: "right", fontSize: "smaller",
     fontStyle: "italic", fontWeight: "normal", textTransform: "none", pointerEvents: "none", whiteSpace: "nowrap", marginTop: "0.2em"
   },
+  ".cm-line.cm-page-break": { position: "relative", lineHeight: "0", margin: "1rem 0", padding: "0", borderLeft: "none" },
+  ".cm-line.cm-page-break::before": { content: '""', position: "absolute", height: "1rem", background: "var(--bg-page)",
+    right: "-0.7in", left: "-1.4in"  // negate page padding
+  },
+  ".cm-line.cm-page-break::after": { content: 'attr(data-pg)', position: "absolute", top: "3rem", right: "0", opacity: "0.8" }
 });
