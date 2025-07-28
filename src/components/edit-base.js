@@ -59,6 +59,8 @@ export class EditBase extends LitElement {
 
   firstUpdated() {
     const textInputs = this.shadowRoot.querySelectorAll('input[data-sanitize], textarea[data-sanitize]');
+    // Attach default sanitiser for every field that declares `data-sanitize`.
+    // For Children to selectively add listeners, over-ride without calling the super & remember to focus.
     textInputs.forEach(el => {
       el.addEventListener('input', this._onInput);
       el.addEventListener('paste', this._onPaste);
