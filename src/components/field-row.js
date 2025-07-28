@@ -1,7 +1,7 @@
 // src/components/field-row.js
 import { LitElement, css, html } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
-import { sanitizeText, CONTACT_RULES, TITLE_FIELD_RULES } from '../misc/text-sanitiser.js';
+import { sanitizeText, DEFAULT_RULES, CONTACT_RULES, TITLE_FIELD_RULES } from '../misc/text-sanitiser.js';
 
 
 /**
