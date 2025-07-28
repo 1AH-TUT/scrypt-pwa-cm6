@@ -1,6 +1,6 @@
 /*  text-sanitiser.js  */
 
-import { MAX_CHARS_PER_LINE } from "../scrypt/default-options.js";
+import { MAX_CHARS_PER_DIALOGUE_LINE, MAX_CHARS_PER_LINE } from "../scrypt/default-options.js";
 
 export const DEFAULT_RULES = Object.freeze({
   trim         : false,    // trim() whole string
@@ -52,11 +52,11 @@ export const makeRules = opts => Object.freeze({ ...DEFAULT_RULES, ...opts });
 
 export const TITLE_FIELD_RULES    = makeRules({ maxLines: 1, maxCols: MAX_CHARS_PER_LINE });
 export const CONTACT_RULES        = makeRules({ maxLines: 4, maxCols: MAX_CHARS_PER_LINE });
-export const CHARACTER_RULES      = makeRules({ maxLines: 1, maxCols: 36, uppercase: true });
+export const CHARACTER_RULES      = makeRules({ maxLines: 1, maxCols: MAX_CHARS_PER_DIALOGUE_LINE, uppercase: true });
 export const TRANSITION_RULES      = makeRules({ maxLines: 1, maxCols: 40, uppercase: true });
 export const SCENE_INDICATOR_RULES = makeRules({ maxLines: 1, maxCols: 12, uppercase: true, trim: true });
 export const SCENE_HEADING_RULES  = makeRules({ maxLines: 1, maxCols: MAX_CHARS_PER_LINE, uppercase: true });
-export const PARENTHETICAL_RULES  = makeRules({ maxLines: 1, maxCols: 34 });
+export const PARENTHETICAL_RULES  = makeRules({ maxLines: 1, maxCols: MAX_CHARS_PER_DIALOGUE_LINE - 2 });
 export const DIALOGUE_RULES       = makeRules({ maxLines: Infinity, maxCols: Infinity });
 export const LOCATION_RULES       = makeRules({ maxLines: 1, maxCols: MAX_CHARS_PER_LINE - 23, uppercase: true });
 export const ACTION_RULES         = makeRules({ maxLines: Infinity, maxCols: Infinity });
