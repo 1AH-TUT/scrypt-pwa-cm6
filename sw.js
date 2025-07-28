@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.026';
+const CACHE_VERSION = 'v1.027';
 const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'index.html',
   'manifest.webmanifest',
@@ -8,6 +8,10 @@ const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   // Main App JS
   'src/main.js',
   'src/router.js',
+
+  // Misc
+  'src/misc/helpers.js',
+  'src/misc/text-sanitiser.js',
 
   // Components
   'src/components/app-sidebar.js',
@@ -34,11 +38,13 @@ const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'src/pages/editor.js',
   'src/pages/workspace.js',
   'src/pages/splash.js',
+  'src/pages/new-scrypt.js',
 
   // Scrypt logic
   'src/scrypt/element-utils.js',
   'src/scrypt/scrypt.js',
   'src/scrypt/default-options.js',
+  'src/scrypt/fields.js',
 
   // services
   'src/services/export-service.js',

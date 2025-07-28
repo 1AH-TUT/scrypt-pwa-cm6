@@ -4,6 +4,7 @@ import { saveScrypt, deleteScrypt, getAllScryptMetas } from "../data-layer/db.js
 import { exportScript, hasNativeSaveDialog } from "../services/export-service.js";
 
 import { PageBase } from '../components/page-base.js';
+import { sanitizeScryptJSON } from "../misc/text-sanitiser.js";
 
 export class WorkspacePage extends PageBase {
   static styles = [
@@ -58,7 +59,7 @@ export class WorkspacePage extends PageBase {
       <div class="workspace-message" style="color: ${this._msgColor}">${this._msg}</div>
 
       <h3>Start new Scrypt</h3>
-      <button ?disabled=${this.drawerOpen} @click=${() => this.dispatchEvent(new CustomEvent('nav', { detail:'new', bubbles:true, composed:true }))}>New Script</button>
+      <button @click=${() => this.dispatchEvent(new CustomEvent('nav', { detail:'new', bubbles:true, composed:true }))}>New Script</button>
 
       <h3>Scrypts in Local Storage</h3>
       <div class="workspace-grid">
@@ -108,8 +109,9 @@ export class WorkspacePage extends PageBase {
       const obj = JSON.parse(text);
       const { ok, errors } = await validateScrypt(obj);
       if (!ok) throw new Error(errors.map(e => `${e.instancePath} ${e.message}`).join('; '));
-      delete obj.id;
-      const id = await saveScrypt(obj);
+      const sanitized = sanitizeScryptJSON(obj, true);
+      delete sanitized.id;
+      const id = await saveScrypt(sanitized);
       this._msg = `Imported script with ID ${id}.`;
       this._msgColor = "green";
       fileInput.value = "";
