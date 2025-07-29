@@ -2,6 +2,7 @@ export const SCRYPT_LINES_PER_PAGE = 56
 export const TOP_MARGIN_LINES = 4
 export const BOTTOM_MARGIN_LINES = 4
 export const MAX_CHARS_PER_LINE = 61
+export const MAX_CHARS_PER_DIALOGUE_LINE = 36
 
 export const DEFAULT_OPTIONS = {
   transition: [
