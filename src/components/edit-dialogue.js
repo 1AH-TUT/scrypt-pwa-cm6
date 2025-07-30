@@ -33,6 +33,7 @@ export class EditDialogue extends EditBase {
         text-align: left;
       }
       .inputlike { font-size: smaller; }
+      .contd-toggle { display: flex; align-items: center; gap: 0.5em; font-size: smaller; margin: 0.25em 0; }
     `
   ];
 
@@ -40,15 +41,17 @@ export class EditDialogue extends EditBase {
     characterOptions: { type: Array },
     character:        { type: String },
     parenthetical:    { type: String },
-    text:             { type: String }
+    text:             { type: String },
+    contd:            { type: Boolean }
   };
 
   constructor() {
     super();
     this.characterOptions = [];
-    this.character   = '';
+    this.character = '';
+    this.contd = false;
     this.parenthetical = '';
-    this.text        = '';
+    this.text = '';
   }
 
   firstUpdated() {
@@ -67,6 +70,7 @@ export class EditDialogue extends EditBase {
   set value(v) {
     if (v && typeof v === 'object') {
       this.character     = v.character     ?? '';
+      this.contd         = v.contd         ?? false;
       this.parenthetical = v.parenthetical ?? '';
       this.text          = v.text          ?? '';
       this.requestUpdate();
@@ -92,6 +96,15 @@ export class EditDialogue extends EditBase {
           ${this.characterOptions.map(o => html`<option value=${o}>`)}
         </datalist>
 
+        <!-- CONTINUED toggle -->
+        <div class="contd-toggle">
+          <input
+            type="checkbox"
+            .checked=${this.contd}
+            @change=${e => this.contd = e.target.checked} />
+          <label for="contd-box">add “ (CONT’D)” to character</label>
+        </div>
+        
         <!-- PARENTHETICAL (optional) -->
         <input
           class="inputlike paren"
@@ -125,6 +138,7 @@ export class EditDialogue extends EditBase {
     /* always store character in uppercase, parenthetical trimmed */
     return {
       character:     this.character.trim().toUpperCase(),
+      contd:         this.contd || undefined,
       parenthetical: this.parenthetical.trim(),
       text:          this.text.trim()
     };

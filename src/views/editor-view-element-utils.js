@@ -7,7 +7,8 @@ import {
   TOP_MARGIN_LINES,
   BOTTOM_MARGIN_LINES,
   MAX_CHARS_PER_LINE,
-  MAX_CHARS_PER_DIALOGUE_LINE
+  MAX_CHARS_PER_DIALOGUE_LINE,
+  UIstrings
 } from '../scrypt/default-options.js'
 
 
@@ -209,9 +210,11 @@ function validatePageStructure(
   @returns {{ lines: string[], lineMap: object[] }}
 */
 function toLinesAndMap(json) {
-  const lines   = [];
+  const lines = [];
   const lineMap = [];
   let page_no = 0
+  let lastElementType = null;
+  let lastDialogueChar = null;
 
   const blank = (n= 1) => {
     lines.push(...Array(n).fill(""));
@@ -229,6 +232,14 @@ function toLinesAndMap(json) {
   const pushLine = (key) => {
     lines.push(json["titlePage"][key]);
     lineMap.push({ id:`tp_${key}`, type:key, field:'text', idx:0, label: `${capitalizeFirst(key)}:` });
+  }
+
+  const popLastBlank = () => {
+    if (lines.length && lineMap[lines.length - 1] === null) {
+      lines.pop();
+      lineMap.pop();
+      pageLines -= 1;
+    }
   }
 
   for (let line = 0; line < totalTitlePageLines; line++) {
@@ -342,10 +353,32 @@ function toLinesAndMap(json) {
   // loop through the scenes and elements
   json.data.scenes.forEach((sc, sceneIdx) => {
     sc.elements.forEach((el, elIdx) => {
+      if (el.type === 'scene_heading') {
+        lastDialogueChar = null;
+      }
+
+      const isFoldedDialogue =  el.type === 'dialogue' && lastElementType === 'dialogue' && el.character.trim().toUpperCase() === lastDialogueChar;
+      // const isDialogueContinuation = el.type === 'dialogue' && lastDialogueChar && el.character.trim().toUpperCase() === lastDialogueChar
+      const isDialogueContinuation = el.type === 'dialogue' &&  el.contd;
+
       const { lines: elLines, meta: elLineMap } = explodeElement(el)
+
+      if (isFoldedDialogue) {
+        popLastBlank();
+        // Drop the “CHARACTER” line + its meta
+        elLines.shift();
+        elLineMap.shift();
+      } else if (isDialogueContinuation) {
+        const contd = UIstrings.contd || ' (CONT’D)';
+        if (!elLines[0].endsWith(contd)) elLines[0] += contd;
+      }
+
       elLineMap[0]['sceneNo'] = sceneIdx
       elLineMap[0]['elementNo'] = elIdx
       addAndMaybeBreak(elLines, elLineMap);
+
+      lastElementType  = el.type;
+      lastDialogueChar = (el.type === 'dialogue') ? el.character.trim().toUpperCase() : lastDialogueChar;
     });
   });
 

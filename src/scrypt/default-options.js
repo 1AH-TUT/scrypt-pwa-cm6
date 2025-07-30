@@ -22,4 +22,7 @@ const blankTemplate = {
   metaData: { schemaVer:'0.1', nextId:3 }
 };
 
+export const UIstrings = {
+  contd: ' (Cont’d)',
+}
 export const getBlankTemplate = () => { return structuredClone(blankTemplate) };

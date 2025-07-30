@@ -137,6 +137,7 @@ class LitBlockWidget extends WidgetType {
       el = document.createElement('edit-dialogue');
       el.characterOptions = this.controller.scrypt.getOptions('character');
       el.character     = elObj.character     || '';
+      el.contd         = elObj.contd         || false;
       el.parenthetical = elObj.parenthetical || '';
       el.text          = elObj.text          || '';
     } else if (elObj.type === 'titlePage') {

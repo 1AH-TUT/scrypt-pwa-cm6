@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://example.com/schemata/schema_v0.3.json",
+  "$id": "https://example.com/schemata/schema_v0.31.json",
   "title": "Screenplay Scrypt JSON",
   "type": "object",
   "required": ["titlePage", "data", "metaData"],
@@ -69,6 +69,7 @@
         "location": { "type": "string", "default": "" },
         "time": { "type": "string", "default": "" },
         "character": { "type": "string", "default": "" },
+        "contd": { "type": "boolean", "default": false },
         "parenthetical": { "type": "string", "default": "" }
       },
       "allOf": [
@@ -86,7 +87,7 @@
             "properties": { "type": { "const": "dialogue" } }
           },
           "then": {
-            "required": ["character", "parenthetical"]
+            "required": ["character", "text"]
           }
         }
       ],
