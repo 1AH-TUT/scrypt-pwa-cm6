@@ -667,8 +667,11 @@ function elementHighlighter(controller) {
       for (let { from } of view.viewportLineBlocks) {
         const ln = view.state.doc.lineAt(from).number - 1;
         if (ln < start || ln > end) continue;
+        const meta = controller.lineMeta[ln];
+        if (!meta) continue;          // skip blanks inside the span
+
         // Apply element block decoration
-        const type = controller.lineMeta[ln].type;
+        const type = meta.type;
         builder.add(from, from, Decoration.line({
           class: `cm-elt-selected cm-elt-selected-${type}`
         }));
