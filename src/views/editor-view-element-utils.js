@@ -1,3 +1,7 @@
+/**********************************************************************
+ * element-utils.js  —  View-layer pagination helpers
+ *********************************************************************/
+
 import {
   SCRYPT_LINES_PER_PAGE,
   TOP_MARGIN_LINES,
@@ -7,7 +11,23 @@ import {
 } from '../scrypt/default-options.js'
 
 
-export function explodeElement(el) {
+/* --- Public constants / lookup tables --- */
+
+  const COLS = Object.freeze({
+    scene_heading : MAX_CHARS_PER_LINE,
+    action        : MAX_CHARS_PER_LINE,
+    transition    : MAX_CHARS_PER_LINE,
+    character     : MAX_CHARS_PER_DIALOGUE_LINE,
+    parenthetical : MAX_CHARS_PER_DIALOGUE_LINE,
+    dialogue      : MAX_CHARS_PER_DIALOGUE_LINE
+  });
+
+  const BREAKS = [" ", "-", "–", "—"];
+
+
+/* --- Element -> line explosion --- */
+
+function explodeElement(el) {
   const id = el.id;
   const lines = [], meta = [];
 
@@ -33,7 +53,162 @@ export function explodeElement(el) {
   return { lines, meta };
 }
 
-export function toLinesAndMap(json) {
+
+/* --- Helpers --- */
+
+function capitalizeFirst(str) { return str ? str[0].toUpperCase() + str.slice(1) : str; }
+
+function wrappedRowsFast(str, max) {
+
+  function rightmostBreak(str, from, to) {
+    let best = -1;
+    for (const ch of BREAKS) {
+      const idx = str.lastIndexOf(ch, to);
+      if (idx >= from && idx > best) best = idx;
+    }
+    return best; // −1 = no breakable char
+  }
+
+  if (str.length <= max) return 1;
+
+  let rows = 0, cursor = 0;
+  const len = str.length;
+
+  while (cursor < len) {
+    const hardEnd = Math.min(cursor + max, len - 1);
+
+    if (hardEnd === len - 1) { rows++; break; }  // last chunk fits exactly
+
+    const br = rightmostBreak(str, cursor, hardEnd);
+    if (br >= cursor) {             // found a soft break inside window
+      rows++;
+      cursor = br + 1;              // skip the break glyph itself
+    } else {                        // single long word
+      rows++;
+      cursor = hardEnd + 1;         // hard-wrap after max cols
+    }
+  }
+  return rows;
+}
+
+function splitLine(str, rowsLeft, maxCols) {
+  if (rowsLeft <= 0) return ["", str];      // nothing fits
+
+  let cursor = 0, rows = 0;
+
+  while (cursor < str.length && rows < rowsLeft) {
+    const hardEnd = Math.min(cursor + maxCols, str.length);
+
+    // look for the right-most break char within the window
+    let br = -1;
+    for (const ch of BREAKS) {
+      const idx = str.lastIndexOf(ch, hardEnd);
+      if (idx >= cursor && idx > br) br = idx;
+    }
+
+    // if no word break found or long word itself is too tall, hard-wrap
+    cursor = (br >= cursor) ? br + 1 : hardEnd;
+    rows++;
+  }
+
+  // cursor now sits **after** the last char we can keep
+  return [str.slice(0, cursor).trimEnd(), str.slice(cursor).trimStart()];
+}
+
+function estimateLines(elLines, elLineMap) {
+  let total = 0;
+
+  for (let i = 0; i < elLines.length; i++) {
+    const meta = elLineMap[i];                 // { type, field, … }
+    let   key  = meta.type;                    // default: action, scene_heading …
+
+    /* Dialogue block gets special widths */
+    if (meta.type === "dialogue") {
+      key = meta.field === "character"     ? "character"
+          : meta.field === "parenthetical" ? "parenthetical"
+          : "dialogue";
+    }
+
+    const cols = COLS[key] ?? MAX_CHARS_PER_LINE;
+    const wrapped = wrappedRowsFast(elLines[i], cols);
+
+    total += wrapped;
+    elLineMap[i]['rows'] = wrapped;
+  }
+
+  return total;
+}
+
+/* --- Dev only Validation --- */
+
+/**
+ * Dev-only helper: Validates that each page (except possibly last) has
+ * exactly the expected number of lines.
+ *
+ * @param {Array} lines - The array of rendered lines from toLinesAndMap
+ * @param {Array} lineMap - The corresponding metadata array
+ * @param {Object} opts - Optionally override margin/page sizes (for tests)
+ */
+function validatePageStructure(
+  lines,
+  lineMap,
+  {
+    TOP = TOP_MARGIN_LINES,
+    PER = SCRYPT_LINES_PER_PAGE,
+    BOTTOM = BOTTOM_MARGIN_LINES
+  } = {}
+) {
+  let pageStart = 0, pageNo = 0, nPages = 0, issues = 0;
+  let expectedTotal = TOP + PER + BOTTOM;
+
+  // Helper to sum up rows
+  const sumRows = (start, end) => {
+    let sum = 0;
+    for (let i = start; i <= end; i++) {
+      const meta = lineMap[i];
+      // Only count visible/real lines
+      if (meta?.type === "page_break") continue;
+      sum += typeof meta?.rows === "number" ? meta.rows : 1;
+    }
+    return sum;
+  };
+
+  for (let i = 0; i < lineMap.length; i++) {
+    const meta = lineMap[i];
+    if (meta && meta.type === "page_break") {
+      const pageEnd = i;
+      const rowSum = sumRows(pageStart, pageEnd);
+      if (nPages > 0 && rowSum !== expectedTotal) {
+        console.warn(
+          `Page ${pageNo} has ${rowSum} "rows" (expected ${expectedTotal}) [${pageStart}-${pageEnd}]`
+        );
+        // Optional: Log which lines over/underflowed
+        // console.log(lineMap.slice(pageStart, pageEnd+1));
+        issues++;
+      }
+      nPages++;
+      pageNo++;
+      pageStart = pageEnd + 1;
+    }
+  }
+
+  console.info(
+    `validatePageStructure: Parsed ${nPages} pages, total (logical) lines: ${lines.length}, issues: ${issues ? issues.length : 0 }` +
+      (issues ? `, ${issues} page(s) with incorrect line count` : "")
+  );
+}
+
+/* --- Main pagination engine --- */
+
+/**
+  Converts scrypt JSON data into paginated lines and meta for CM6 editor view.
+  Handles page breaks, element splitting, and screenwriting formatting.
+
+  @param {object} json - Normalized screenplay structure.
+
+  @returns {{ lines: string[], lineMap: object[] }}
+*/
+function toLinesAndMap(json) {
   const lines   = [];
   const lineMap = [];
   let page_no = 0
@@ -48,13 +223,12 @@ export function toLinesAndMap(json) {
     lineMap.push({ "type": "page_break", "page": page_number + '.' });
     blank(TOP_MARGIN_LINES);
   }
-  const capitalizeFirst = (str) => { if (!str) return str; return str.charAt(0).toUpperCase() + str.slice(1); }
 
   // Title Page
   const totalTitlePageLines = SCRYPT_LINES_PER_PAGE + TOP_MARGIN_LINES;
   const pushLine = (key) => {
-      lines.push(json["titlePage"][key]);
-      lineMap.push({ id:`tp_${key}`, type:key, field:'text', idx:0, label: `${capitalizeFirst(key)}:` });
+    lines.push(json["titlePage"][key]);
+    lineMap.push({ id:`tp_${key}`, type:key, field:'text', idx:0, label: `${capitalizeFirst(key)}:` });
   }
 
   for (let line = 0; line < totalTitlePageLines; line++) {
@@ -82,104 +256,12 @@ export function toLinesAndMap(json) {
       blank();
     }
   }
+
   newPage(++page_no);
 
   // Rest of Scrypt
   let pageLines = 0;
 
-  const COLS = Object.freeze({
-    scene_heading : MAX_CHARS_PER_LINE,
-    action        : MAX_CHARS_PER_LINE,
-    transition    : MAX_CHARS_PER_LINE,
-    character     : MAX_CHARS_PER_DIALOGUE_LINE,
-    parenthetical : MAX_CHARS_PER_DIALOGUE_LINE,
-    dialogue      : MAX_CHARS_PER_DIALOGUE_LINE
-  });
-  const BREAKS = [" ", "-", "–", "—"];
-
-  function wrappedRowsFast(str, max) {
-
-    function rightmostBreak(str, from, to) {
-      let best = -1;
-      for (const ch of BREAKS) {
-        const idx = str.lastIndexOf(ch, to);
-        if (idx >= from && idx > best) best = idx;
-      }
-      return best; // −1 = no breakable char
-    }
-
-    if (str.length <= max) return 1;
-
-    let rows = 0, cursor = 0;
-    const len = str.length;
-
-    while (cursor < len) {
-      const hardEnd = Math.min(cursor + max, len - 1);
-
-      if (hardEnd === len - 1) { rows++; break; }  // last chunk fits exactly
-
-      const br = rightmostBreak(str, cursor, hardEnd);
-      if (br >= cursor) {             // found a soft break inside window
-        rows++;
-        cursor = br + 1;              // skip the break glyph itself
-      } else {                        // single long word
-        rows++;
-        cursor = hardEnd + 1;         // hard-wrap after max cols
-      }
-    }
-    return rows;
-  }
-
-  function splitLine(str, rowsLeft, maxCols) {
-    if (rowsLeft <= 0) return ["", str];      // nothing fits
-
-    let cursor = 0, rows = 0, lastBreak = -1;
-
-    while (cursor < str.length && rows < rowsLeft) {
-      const hardEnd = Math.min(cursor + maxCols, str.length);
-
-      // look for the right-most break char within the window
-      let br = -1;
-      for (const ch of BREAKS) {
-        const idx = str.lastIndexOf(ch, hardEnd);
-        if (idx >= cursor && idx > br) br = idx;
-      }
-
-      // if no word break found or long word itself is too tall, hard-wrap
-      cursor = (br >= cursor) ? br + 1 : hardEnd;
-      rows++;
-    }
-
-    // cursor now sits **after** the last char we can keep
-    return [str.slice(0, cursor).trimEnd(), str.slice(cursor).trimStart()];
-  }
-
-
-  const estimateLines = (elLines, elLineMap) => {
-    let total = 0;
-
-    for (let i = 0; i < elLines.length; i++) {
-      const meta = elLineMap[i];                 // { type, field, … }
-      let   key  = meta.type;                    // default: action, scene_heading …
-
-      /* Dialogue block gets special widths */
-      if (meta.type === "dialogue") {
-        key = meta.field === "character"     ? "character"
-            : meta.field === "parenthetical" ? "parenthetical"
-            : "dialogue";
-      }
-
-      const cols = COLS[key] ?? MAX_CHARS_PER_LINE;
-      const wrapped = wrappedRowsFast(elLines[i], cols);
-
-      total += wrapped;
-      elLineMap[i]['rows'] = wrapped;
-    }
-
-    return total;
-  }
-
-  /* this function is a WIP - todo: handle splitting elements dialogue/action across pages (and handle when > 1 page) */
   const addAndMaybeBreak = (elLines, elLineMap) => {
     let extra = estimateLines(elLines, elLineMap);
 
@@ -190,27 +272,13 @@ export function toLinesAndMap(json) {
     // Will it fit on this page?
     let elLinesAlreadyPushed = 0;
     if (pageLines + extra > SCRYPT_LINES_PER_PAGE) {
-      // if not, fill out the previous page to the footer
+      // if not, split page wrap-able elements or fill with blanks
       const remainder = SCRYPT_LINES_PER_PAGE - pageLines;
       if (remainder > 0) {
         const elType = elLineMap[0].type;
         if (elType === 'action') {
-          // walk the lines adding any that fit on the page
+          // walk the lines adding any that fit on the page [may MUTATE lines & LineMap]
           let rowsLeft = remainder;
-          // let i = 0;
-          // while (i < elLines.length && rowsLeft >= elLineMap[i].rows) {
-          //   const actualLines = elLineMap[i].rows;
-          //   if (pageLines + actualLines <= SCRYPT_LINES_PER_PAGE) {
-          //     // this line fits
-          //     lines.push(elLines[i]);
-          //     lineMap.push(elLineMap[i]);
-          //     elLinesAlreadyPushed += 1;
-          //     pageLines += actualLines;
-          //     rowsLeft -= actualLines;
-          //     i++;
-          //   }
-          // }
-
           let i = 0;
           while (i < elLines.length && rowsLeft > 0) {
             const meta  = elLineMap[i];
@@ -218,35 +286,34 @@ export function toLinesAndMap(json) {
             if (rows <= rowsLeft) {
               /* whole logical line fits */
               lines.push(elLines[i]);
-              lineMap.push(meta);
+              const headMeta = { ...meta, rows };
+              lineMap.push(headMeta);
               elLinesAlreadyPushed++;
               pageLines += rows;
               rowsLeft  -= rows;
               i++;
             } else {
-              /* split this logical line */
+              // split this logical line
               const maxCols = COLS.action;
               const [head, tail] = splitLine(elLines[i], rowsLeft, maxCols);
+              const headRows = wrappedRowsFast(head, COLS.action);
 
               // push head fragment to current page
               lines.push(head);
-              lineMap.push({ ...meta });          // shallow copy is fine
-              pageLines += rowsLeft;
-              // elLinesAlreadyPushed++;           // we consumed one logical line
-              // mutate the original arrays so tail replaces current index
+              lineMap.push({ ...meta, rows: headRows });
+              pageLines += headRows;
+              rowsLeft -= headRows;
+              // mutate elLines so only tail is carried
               elLines[i] = tail;
-              elLineMap[i].rows = rows - rowsLeft;   // tail rows
-              rowsLeft = 0;                          // page full
+              elLineMap[i].rows = rows - headRows;
             }
           }
-
-          if (SCRYPT_LINES_PER_PAGE - pageLines > 0) blank(SCRYPT_LINES_PER_PAGE - pageLines)
         } else {
           blank(remainder);
         }
       }
 
-      // then start a new one
+      // then start a new page
       pageLines = 0;
       newPage(++page_no);
     }
@@ -261,7 +328,9 @@ export function toLinesAndMap(json) {
     } else {
       lines.push(...elLines);
       lineMap.push(...elLineMap);
-      pageLines += extra;
+      // extra may be stale if lines/lineMap were mutated, recalculate
+      const etxraRows = elLineMap.reduce((sum, m) => sum + (m.rows ?? 0), 0);
+      pageLines += etxraRows;
     }
     // blank line spacer after the block (if it still fits on this page)
     if (pageLines + 1 <= SCRYPT_LINES_PER_PAGE) {
@@ -270,6 +339,7 @@ export function toLinesAndMap(json) {
     }
   }
 
+  // loop through the scenes and elements
   json.data.scenes.forEach((sc, sceneIdx) => {
     sc.elements.forEach((el, elIdx) => {
       const { lines: elLines, meta: elLineMap } = explodeElement(el)
@@ -279,8 +349,11 @@ export function toLinesAndMap(json) {
     });
   });
 
-  // ensure last line is a blank (it may have been skipped at the end of a page) - needed to ensure proper layout of insert bar at bottom
-  // add one if not / start a new page if required
+  /*
+   * Ensure that the last line is a blank (it may have been skipped at the end of a full page.)
+   * This is needed to ensure proper layout of the insert bar at bottom.
+   * Either add one (if there is room) or start a new page.
+   */
   const lastMeta = lineMap[lineMap.length - 1];
 
   if (lastMeta !== null) {
@@ -292,5 +365,12 @@ export function toLinesAndMap(json) {
       pageLines = 0;
     }
   }
+
+  /* dev only ! */
+  validatePageStructure(lines, lineMap);
+
   return { lines, lineMap };
 }
+
+
+export { toLinesAndMap  }
