@@ -125,12 +125,12 @@ src/
     index.js            # Page export barrel (optional, for router)
   scrypt/
     scrypt.js           # Scrypt class: canonical screenplay object, autosave logic
-    element-utils.js    # Helpers to explode elements into lines + meta for CM6
   state/
     current-scrypt.js   # Holds current in-memory Scrypt object
     state.js            # Script ID/session tracking for current/last script
   views/
     editor-view.js      # CodeMirror 6 setup: layout, highlighting, navigation, selection
+    editor-view-element-utils.js    # Helpers to explode elements into lines + meta for CM6
 ```
 
 ---

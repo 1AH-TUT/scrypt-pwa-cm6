@@ -1,4 +1,4 @@
-import { toLinesAndMap } from "../scrypt/element-utils.js";
+import { toLinesAndMap } from "../views/editor-view-element-utils.js";
 
 export class EditorController extends EventTarget {
   #elementOrder = [];

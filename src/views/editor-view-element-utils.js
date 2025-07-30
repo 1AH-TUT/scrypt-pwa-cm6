@@ -4,7 +4,7 @@ import {
   BOTTOM_MARGIN_LINES,
   MAX_CHARS_PER_LINE,
   MAX_CHARS_PER_DIALOGUE_LINE
-} from './default-options.js'
+} from '../scrypt/default-options.js'
 
 
 export function explodeElement(el) {
@@ -95,9 +95,9 @@ export function toLinesAndMap(json) {
     parenthetical : MAX_CHARS_PER_DIALOGUE_LINE,
     dialogue      : MAX_CHARS_PER_DIALOGUE_LINE
   });
+  const BREAKS = [" ", "-", "–", "—"];
 
   function wrappedRowsFast(str, max) {
-    const BREAKS = [" ", "-", "–", "—"];
 
     function rightmostBreak(str, from, to) {
       let best = -1;
@@ -130,6 +130,31 @@ export function toLinesAndMap(json) {
     return rows;
   }
 
+  function splitLine(str, rowsLeft, maxCols) {
+    if (rowsLeft <= 0) return ["", str];      // nothing fits
+
+    let cursor = 0, rows = 0, lastBreak = -1;
+
+    while (cursor < str.length && rows < rowsLeft) {
+      const hardEnd = Math.min(cursor + maxCols, str.length);
+
+      // look for the right-most break char within the window
+      let br = -1;
+      for (const ch of BREAKS) {
+        const idx = str.lastIndexOf(ch, hardEnd);
+        if (idx >= cursor && idx > br) br = idx;
+      }
+
+      // if no word break found or long word itself is too tall, hard-wrap
+      cursor = (br >= cursor) ? br + 1 : hardEnd;
+      rows++;
+    }
+
+    // cursor now sits **after** the last char we can keep
+    return [str.slice(0, cursor).trimEnd(), str.slice(cursor).trimStart()];
+  }
+
+
   const estimateLines = (elLines, elLineMap) => {
     let total = 0;
 
@@ -148,6 +173,7 @@ export function toLinesAndMap(json) {
       const wrapped = wrappedRowsFast(elLines[i], cols);
 
       total += wrapped;
+      elLineMap[i]['rows'] = wrapped;
     }
 
     return total;
@@ -162,20 +188,81 @@ export function toLinesAndMap(json) {
     if (extra > SCRYPT_LINES_PER_PAGE) extra = SCRYPT_LINES_PER_PAGE;
 
     // Will it fit on this page?
+    let elLinesAlreadyPushed = 0;
     if (pageLines + extra > SCRYPT_LINES_PER_PAGE) {
       // if not, fill out the previous page to the footer
       const remainder = SCRYPT_LINES_PER_PAGE - pageLines;
-      if (remainder > 0) blank(remainder);
+      if (remainder > 0) {
+        const elType = elLineMap[0].type;
+        if (elType === 'action') {
+          // walk the lines adding any that fit on the page
+          let rowsLeft = remainder;
+          // let i = 0;
+          // while (i < elLines.length && rowsLeft >= elLineMap[i].rows) {
+          //   const actualLines = elLineMap[i].rows;
+          //   if (pageLines + actualLines <= SCRYPT_LINES_PER_PAGE) {
+          //     // this line fits
+          //     lines.push(elLines[i]);
+          //     lineMap.push(elLineMap[i]);
+          //     elLinesAlreadyPushed += 1;
+          //     pageLines += actualLines;
+          //     rowsLeft -= actualLines;
+          //     i++;
+          //   }
+          // }
+
+          let i = 0;
+          while (i < elLines.length && rowsLeft > 0) {
+            const meta  = elLineMap[i];
+            const rows  = meta.rows;
+            if (rows <= rowsLeft) {
+              /* whole logical line fits */
+              lines.push(elLines[i]);
+              lineMap.push(meta);
+              elLinesAlreadyPushed++;
+              pageLines += rows;
+              rowsLeft  -= rows;
+              i++;
+            } else {
+              /* split this logical line */
+              const maxCols = COLS.action;
+              const [head, tail] = splitLine(elLines[i], rowsLeft, maxCols);
+
+              // push head fragment to current page
+              lines.push(head);
+              lineMap.push({ ...meta });          // shallow copy is fine
+              pageLines += rowsLeft;
+              // elLinesAlreadyPushed++;           // we consumed one logical line
+              // mutate the original arrays so tail replaces current index
+              elLines[i] = tail;
+              elLineMap[i].rows = rows - rowsLeft;   // tail rows
+              rowsLeft = 0;                          // page full
+            }
+          }
+
+          if (SCRYPT_LINES_PER_PAGE - pageLines > 0) blank(SCRYPT_LINES_PER_PAGE - pageLines)
+        } else {
+          blank(remainder);
+        }
+      }
+
       // then start a new one
       pageLines = 0;
       newPage(++page_no);
     }
 
-    // add the element
-    lines.push(...elLines);
-    lineMap.push(...elLineMap)
-    pageLines += extra;
-
+    // add the element (or remainder of)
+    if (elLinesAlreadyPushed > 0) {
+      const elLinesTail = elLines.slice(elLinesAlreadyPushed)
+      const elLineMapTail = elLineMap.slice(elLinesAlreadyPushed)
+      lines.push(...elLinesTail);
+      lineMap.push(...elLineMapTail);
+      pageLines += elLineMapTail.reduce((sum, m) => sum + (m.rows ?? 0), 0);
+    } else {
+      lines.push(...elLines);
+      lineMap.push(...elLineMap);
+      pageLines += extra;
+    }
     // blank line spacer after the block (if it still fits on this page)
     if (pageLines + 1 <= SCRYPT_LINES_PER_PAGE) {
       blank();
