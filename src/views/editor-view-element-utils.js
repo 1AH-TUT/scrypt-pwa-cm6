@@ -328,9 +328,9 @@ function toLinesAndMap(json) {
     } else {
       lines.push(...elLines);
       lineMap.push(...elLineMap);
-      // extra may be stale if lines/lineMap were mutated, recalculate
-      const etxraRows = elLineMap.reduce((sum, m) => sum + (m.rows ?? 0), 0);
-      pageLines += etxraRows;
+      // `extra` may be stale if lines/lineMap were mutated, recalculate
+      const extraRows = elLineMap.reduce((sum, m) => sum + (m.rows ?? 0), 0);
+      pageLines += extraRows;
     }
     // blank line spacer after the block (if it still fits on this page)
     if (pageLines + 1 <= SCRYPT_LINES_PER_PAGE) {
