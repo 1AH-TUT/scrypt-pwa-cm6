@@ -265,10 +265,6 @@ function toLinesAndMap(json) {
   const addAndMaybeBreak = (elLines, elLineMap) => {
     let extra = estimateLines(elLines, elLineMap);
 
-    // Hack - No way to handle elements > 1 page yet, this at least renders them on screen...
-    // todo handle split dialogue/action elements
-    if (extra > SCRYPT_LINES_PER_PAGE) extra = SCRYPT_LINES_PER_PAGE;
-
     // Will it fit on this page?
     let elLinesAlreadyPushed = 0;
     if (pageLines + extra > SCRYPT_LINES_PER_PAGE) {
@@ -276,6 +272,7 @@ function toLinesAndMap(json) {
       const remainder = SCRYPT_LINES_PER_PAGE - pageLines;
       if (remainder > 0) {
         const elType = elLineMap[0].type;
+
         if (elType === 'action') {
           // walk the lines adding any that fit on the page [may MUTATE lines & LineMap]
           let rowsLeft = remainder;
@@ -308,6 +305,9 @@ function toLinesAndMap(json) {
               elLineMap[i].rows = rows - headRows;
             }
           }
+        } else if (elType === 'dialogue')  {
+          // todo handle split dialogue
+          blank(remainder);
         } else {
           blank(remainder);
         }
@@ -322,9 +322,9 @@ function toLinesAndMap(json) {
     if (elLinesAlreadyPushed > 0) {
       const elLinesTail = elLines.slice(elLinesAlreadyPushed)
       const elLineMapTail = elLineMap.slice(elLinesAlreadyPushed)
-      lines.push(...elLinesTail);
-      lineMap.push(...elLineMapTail);
-      pageLines += elLineMapTail.reduce((sum, m) => sum + (m.rows ?? 0), 0);
+      // recurse to handle multiple page spanning elements
+      addAndMaybeBreak(elLinesTail, elLineMapTail);
+      return;
     } else {
       lines.push(...elLines);
       lineMap.push(...elLineMap);
