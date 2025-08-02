@@ -445,7 +445,13 @@ function screenplayLayout(controller) {
       for (let { from } of view.viewportLineBlocks) {
         const ln= view.state.doc.lineAt(from).number - 1;
         const meta = controller.lineMeta[ln];
-        if (!meta) continue;
+        if (!meta) continue; // ignore blank lines
+
+        // Add class to hide blank lines marked fold_spacer (folded dialogue)
+        if (meta.type === "fold_spacer") {
+          b.add(from, from, Decoration.line({ class:"cm-fold-spacer" }));
+          continue;
+        }
 
         // Add margin label if line has a label
         if (meta.label) {
@@ -669,7 +675,7 @@ function elementHighlighter(controller) {
         const ln = view.state.doc.lineAt(from).number - 1;
         if (ln < start || ln > end) continue;
         const meta = controller.lineMeta[ln];
-        if (!meta) continue;          // skip blanks inside the span
+        if (isBlank(meta)) continue;
 
         // Apply element block decoration
         const type = meta.type;
@@ -731,6 +737,8 @@ export const buildExtensions = controller => [
 
 /* --- Helpers --- */
 const getElementOrder = controller => { return [...controller.elementOrder, "_insert_bar_"]; }
+
+const isBlank = m => !m || m.type === "fold_spacer";
 
 /*
   Create the View
@@ -822,7 +830,7 @@ export function createEditorView({ parent, controller }) {
     // Find the line that was double-clicked
     const line = view.state.doc.lineAt(cmPos).number - 1;
     const meta = controller.lineMeta[line];
-    if (!meta?.id) return;
+    if (isBlank(meta)) return;
 
     if (!editableTypes.includes(meta.type)) return;
 
