@@ -83,5 +83,7 @@ export const mainTheme = EditorView.baseTheme({
   ".cm-line.cm-page-break::before": { content: '""', position: "absolute", height: "1rem", background: "var(--bg-page)",
     right: "-0.7in", left: "-1.4in"  // negate page padding
   },
-  ".cm-line.cm-page-break::after": { content: 'attr(data-pg)', position: "absolute", top: "3rem", right: "0", opacity: "0.8" }
+  ".cm-line.cm-page-break::after": { content: 'attr(data-pg)', position: "absolute", top: "3rem", right: "0", opacity: "0.8" },
+  ".cm-fold-spacer": { fontSize: '0', lineHeight: '0' },
+  ".cm-fold-spacer .cm-insert-bar, .cm-insert-bar + .cm-fold-spacer": { fontSize: 'var(--font-size-screenplay, 12pt)', lineHeight: 'normal'}
 });
