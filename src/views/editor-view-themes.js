@@ -85,5 +85,6 @@ export const mainTheme = EditorView.baseTheme({
   },
   ".cm-line.cm-page-break::after": { content: 'attr(data-pg)', position: "absolute", top: "3rem", right: "0", opacity: "0.8" },
   ".cm-fold-spacer": { fontSize: '0', lineHeight: '0' },
-  ".cm-fold-spacer .cm-insert-bar, .cm-insert-bar + .cm-fold-spacer": { fontSize: 'var(--font-size-screenplay, 12pt)', lineHeight: 'normal'}
+  ".cm-fold-spacer .cm-insert-bar, .cm-insert-bar + .cm-fold-spacer": { fontSize: 'var(--font-size-screenplay, 12pt)', lineHeight: 'normal'},
+  ".cm-line.cm-more-marker::after": { content: '"(MORE)"', position: "absolute", top: "100%", marginTop: "0.8em", left: "50%", transform: "translateX(-50%)", opacity: "0.8" },
 });

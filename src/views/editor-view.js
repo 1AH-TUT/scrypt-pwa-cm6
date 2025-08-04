@@ -453,6 +453,11 @@ function screenplayLayout(controller) {
           continue;
         }
 
+        // Add 'more' class if dialogue continued
+        if (meta.more) {
+          b.add(from, from, Decoration.line({ class:"cm-more-marker" }));
+        }
+
         // Add margin label if line has a label
         if (meta.label) {
           b.add(from, from, Decoration.line({
