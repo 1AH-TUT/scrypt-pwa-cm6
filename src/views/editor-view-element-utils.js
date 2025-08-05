@@ -69,6 +69,7 @@ class PageManager {
   #nLinesTopMargin = TOP_MARGIN_LINES;
   #nLinesBottomMargin = BOTTOM_MARGIN_LINES;
   #colsLookup = COLS;
+  #splitLineOnSentences = false;
 
   /**
    * @param {object} [options] - Pagination config.
@@ -76,7 +77,8 @@ class PageManager {
    * @param {number} [options.topMargin] - Number of lines in top margin.
    * @param {number} [options.bottomMargin] - Number of lines in bottom margin.
    * @param {string} [options.contdToken] - String to append for continued dialogue.
-   * @param {object} [options.colsLookup] - Mapping of element type to max chars/line.
+   * @param {object} [options.colsLookup] - Mapping of element type to max chars/line.@param {object} [options.colsLookup] - Mapping of element type to max chars/line.
+   * @param {boolean} [options.splitLineOnSentences] - Whether to respect sentence boundaries when splitting lines.
    * @param {boolean} [options.validate] - Whether to validate page structure.
    * @param {boolean} [options.verbose] - Enable verbose debug output.
    */
@@ -86,6 +88,7 @@ class PageManager {
                 bottomMargin = BOTTOM_MARGIN_LINES,
                 contdToken = UIstrings.contd || ' (CONT’D)',
                 colsLookup = COLS,
+                splitLineOnSentences = false,
                 validate=false, verbose=false
   } = {}) {
     this.#validate = validate;
@@ -93,8 +96,9 @@ class PageManager {
     this.#nLinesPerPage = linesPerPage;
     this.#nLinesTopMargin = topMargin;
     this.#nLinesBottomMargin = bottomMargin;
-    this.#strings = { cont: contdToken };
+    this.#strings = { contd: contdToken };
     this.#colsLookup = colsLookup;
+    this.#splitLineOnSentences = splitLineOnSentences;
   }
 
   /* --- public interface --- */
@@ -108,7 +112,7 @@ class PageManager {
         character = l[0].toUpperCase().trim();
 
         const isFoldedDialogue =  this.#lastElementType === 'dialogue' && character === this.#lastDialogueChar;
-        let isDialogueContinuation = m[0].contd;
+        let isDialogueContinuation = m[0].contd === true;
         if (isFoldedDialogue) {
           if (this.#pageLines === 0) {
             // don't fold at top of page, just ensure contd
@@ -130,7 +134,7 @@ class PageManager {
           if (this.#verbose) {
             console.info(`${String(this.#pageNo).padStart(3, "0")} Marking Dialogue ${m[0].id} continued (${m[0].contd ? 'user' : 'system'}): ${l.join('|').slice(0, 80)}`);
           }
-          if (!l[0].endsWith(this.#strings.cont)) l[0] += this.#strings.contd;
+          if (!l[0].endsWith(this.#strings.contd)) l[0] += this.#strings.contd;
         }
       } else {
         this.#lastDialogueChar = null;
@@ -317,6 +321,8 @@ class PageManager {
   /** Completes the current page, inserts a page break, and sets up the next page. Moves orphaned sluglines to top of new page */
   #breakPage() {
     this.#pageNo += 1;
+    this.#lastDialogueChar = null;
+
     if (this.#lastElementType === 'scene_heading') {
       // bump the scene_heading to a new page
       let index = this.#lineMap.length - 1;
@@ -390,6 +396,57 @@ class PageManager {
     return [str.slice(0, cursor), str.slice(cursor)];
   }
 
+  /** Splits a single string into a head and tail, based on sentence boundaries and available rows */
+  static splitLineBySentence(str, rowsLeft, maxCols) {
+    if (rowsLeft <= 0) return ["", str];
+
+    // naïve sentence tokeniser, accepts '.', '?', '!', '…', '---' as terminators UNLESS we recognise a common abbreviation.
+    const ABBR = /^(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|U\.S|U\.K|etc)\.$/i;
+    const tokens = [];
+    let buf = "";
+
+    // Split sentences
+    for (let i = 0; i < str.length; i++) {
+      buf += str[i];
+      // If this char starts a sequence of '.' or '-', keep buffering
+      if ((str[i] === "." && str[i + 1] === ".") || (str[i] === "-" && str[i + 1] === "-")) continue;
+
+      const lookback = str.slice(Math.max(0, i - 4), i + 1); // for '---'
+      const isEllipsis = lookback.endsWith("...") || lookback.endsWith("…");
+      const isDash     = lookback.endsWith("---") || lookback.endsWith("--") || lookback.endsWith("—");
+      const isEndPunct = /[.!?]/.test(str[i]);
+
+      if (isDash || isEllipsis || (isEndPunct && !ABBR.test(buf.trim()))) {
+        tokens.push(buf.trim());   // commit sentence
+        buf = "";
+      }
+    }
+    if (buf.trim()) tokens.push(buf.trim());
+
+    // Greedy pack sentences until out of rows
+    let headTokens = [];
+    let cursor = 0;
+    while (cursor < tokens.length) {
+      const candidate = [...headTokens, tokens[cursor]].join(" ");
+      const rowCount = PageManager.wrappedRowsFast(candidate, maxCols);
+      if (rowCount > rowsLeft) break;
+      headTokens.push(tokens[cursor]);
+      cursor++;
+    }
+
+    let head = "";
+    let tail = "";
+
+    // No sentence fits → return empty head
+    if (headTokens.length === 0) {
+      tail = str;
+    } else {
+      head = headTokens.join(" ");
+      tail = tokens.slice(cursor).join(" ");
+    }
+    return [head, tail];
+  }
+
   /** Intelligently splits an element's lines and meta into head (fits-on-page) and tail (remainder) for pagination. */
   _splitElement(elLines, elLineMap, rowsSpare) {
     // naive version - splits on lines only
@@ -440,16 +497,29 @@ class PageManager {
         i++;
       } else {
         // split logical line
-        const [lineHead, lineTail] = PageManager.splitLine(elLines[i], rowsSpare, maxCols);
+        let lineHead = null;
+        let lineTail = null;
+        if (this.#splitLineOnSentences) {
+          [lineHead, lineTail] = PageManager.splitLineBySentence(elLines[i], rowsSpare, maxCols);
+
+        } else {
+          [lineHead, lineTail] = PageManager.splitLine(elLines[i], rowsSpare, maxCols);
+        }
+
         const headRows = PageManager.wrappedRowsFast(lineHead, maxCols);
+        const tailRows = PageManager.wrappedRowsFast(lineTail, maxCols);
 
         // push head fragment
-        head.lines.push(lineHead);
-        head.map.push({ ...meta, rows: headRows });
+        if (lineHead.length) {
+          head.lines.push(lineHead);
+          head.map.push({...meta, rows: headRows});
+        }
 
         // dump the rest in tail
-        tail.lines.push(lineTail);
-        tail.map.push({ ...meta, rows: rows - headRows });
+        if (lineTail.length) {
+          tail.lines.push(lineTail);
+          tail.map.push({...meta, rows: tailRows});
+        }
         i++;
         break;
       }
@@ -473,7 +543,14 @@ class PageManager {
       // if we have a split dialogue, mark the last line of head with 'more'
       if (head.lines.length && tail.lines.length) {
         const last = head.map.at(-1);
-        head.map[head.map.length - 1] = {...last, more: true};
+        head.map[head.map.length - 1] = { ...last, more: head.lines.length > 0 };
+      }
+
+      // Ensure no auto cont'd if split sentence has bumped a fragment to tail
+      if (this.#splitLineOnSentences && head.lines.length === 0) {
+        if (tail.lines[0].endsWith(this.#strings.contd)) {
+          tail.lines[0] = tail.lines[0].slice(0, tail.lines[0].length - this.#strings.contd.length)
+        }
       }
     }
 
@@ -554,7 +631,8 @@ class PageManager {
   @returns {{ lines: string[], lineMap: object[] }}
 */
 function toLinesAndMap(json) {
-  const pager = new PageManager({ validate: true, verbose: true });
+  const pager = new PageManager({
+    validate: true, verbose: true, splitLineOnSentences: true });
 
   pager.pushTitlePage(json.titlePage);
 
