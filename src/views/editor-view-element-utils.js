@@ -401,7 +401,8 @@ class PageManager {
     if (rowsLeft <= 0) return ["", str];
 
     // naïve sentence tokeniser, accepts '.', '?', '!', '…', '---' as terminators UNLESS we recognise a common abbreviation.
-    const ABBR = /^(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|U\.S|U\.K|etc)\.$/i;
+    // const ABBR = /^(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|U\.S|U\.K|etc)\.$/i;
+    const ABBR = /^(?:(?:Mr|Mrs|Ms|Dr|Prof|St|Sr|Jr|etc)\.|(?:[A-Za-z]\.){2,})$/i;
     const tokens = [];
     let buf = "";
 
@@ -409,14 +410,24 @@ class PageManager {
     for (let i = 0; i < str.length; i++) {
       buf += str[i];
       // If this char starts a sequence of '.' or '-', keep buffering
-      if ((str[i] === "." && str[i + 1] === ".") || (str[i] === "-" && str[i + 1] === "-")) continue;
+      if (
+        (str[i] === "." && str[i + 1] === ".") ||
+        (str[i] === "-" && str[i + 1] === "-")
+      ) continue;
+      if (str[i] === "." && /[A-Za-z]/.test(str[i + 1]) && str[i + 2] === ".")
+      {
+        continue;
+      }
 
       const lookback = str.slice(Math.max(0, i - 4), i + 1); // for '---'
       const isEllipsis = lookback.endsWith("...") || lookback.endsWith("…");
       const isDash     = lookback.endsWith("---") || lookback.endsWith("--") || lookback.endsWith("—");
       const isEndPunct = /[.!?]/.test(str[i]);
 
-      if (isDash || isEllipsis || (isEndPunct && !ABBR.test(buf.trim()))) {
+      // get the last space-separated token:
+      const lastWord = buf.trim().split(/\s+/).pop();
+      const isAbbrev = ABBR.test(lastWord);
+      if (isDash || isEllipsis || (isEndPunct && !isAbbrev)) {
         tokens.push(buf.trim());   // commit sentence
         buf = "";
       }
