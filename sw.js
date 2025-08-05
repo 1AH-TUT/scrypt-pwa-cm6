@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.033';
+const CACHE_VERSION = 'v1.034';
 const CACHE = `scrypt-cm6-${CACHE_VERSION}`;const ASSETS = [
   'index.html',
   'manifest.webmanifest',
