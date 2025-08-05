@@ -13,7 +13,6 @@ export class EditorController extends EventTarget {
     super();
 
     this.scrypt = script;
-    ({ lines: this.lines, lineMap: this.lineMeta } = toLinesAndMap(this.scrypt));
 
     // Build the indexes
     this.reindex();
